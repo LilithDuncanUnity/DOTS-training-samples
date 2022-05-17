@@ -1,7 +1,9 @@
 using Unity.Entities;
+using UnityEngine;
 
 class CarAuthoring : UnityEngine.MonoBehaviour
 {
+    public Transform CarCameraPoint;
 }
 
 class CarBaker : Baker<CarAuthoring>
@@ -13,5 +15,9 @@ class CarBaker : Baker<CarAuthoring>
         AddComponent<CarLane>();
         AddComponent<CarProperties>();
         AddComponent<CarSpeed>();
+        AddComponent(new CarCameraPoint()
+        {
+            CameraPoint = GetEntity(authoring.CarCameraPoint),
+        });
     }
 }

@@ -19,6 +19,17 @@ partial struct CarSpawningSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        SystemAPI.TryGetSingletonEntity<SelectedCar>(out Entity sce);
+        if (sce == Entity.Null)
+        {
+            var e = state.EntityManager.CreateEntity();
+            state.EntityManager.AddComponent<SelectedCar>(e);
+            state.EntityManager.SetComponentData<SelectedCar>(e, new()
+            {
+                Selected = Entity.Null
+            });
+        }
+
         var config = SystemAPI.GetSingleton<CarConfig>();
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();

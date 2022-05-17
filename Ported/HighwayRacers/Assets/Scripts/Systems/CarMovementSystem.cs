@@ -19,6 +19,6 @@ partial class TankMovementSystem : SystemBase
                 //math.sincos(angle, out dir.x, out dir.z);
                 transform.Position += /*dir * */dt * 5.0f;
                 //transform.Rotation = quaternion.RotateY(angle);
-            }).ScheduleParallel();
+            }).Run();
     }
 }

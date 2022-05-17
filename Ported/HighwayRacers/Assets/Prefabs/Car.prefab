@@ -244,3 +244,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49c8e784b0798e946a3358a4e629acb6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  CarCameraPoint: {fileID: 4435006581228880}
