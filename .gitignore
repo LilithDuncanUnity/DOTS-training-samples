@@ -45,3 +45,8 @@ sysinfo.txt
 *.unitypackage
 
 *.DS_Store
+
+/Ported/HighwayRacers/Packages/
+!/Ported/HighwayRacers/Packages/manifest.json
+!/Ported/HighwayRacers/Packages/packages-lock.json
+**/SceneDependencyCache/
