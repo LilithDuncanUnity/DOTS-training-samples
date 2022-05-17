@@ -12,7 +12,7 @@ class TrackUtilities
 
     public static float GetStraightawayLength(float lane0Length)
     {
-        return (lane0Length - CURVE_LANE0_RADIUS * 4) / 4;
+        return (lane0Length - GetCurveLength(0)*4) / 4;
     }
 
     public static float GetLaneLength(float lane0Length, int lane)
@@ -67,7 +67,8 @@ class TrackUtilities
                     distance -= straightAwayLength;
                     GetCurvePiecePosition(distance, lane, out localX, out localZ, out rotation);
                 }
-                RotateAroundOrigin(localX, localZ, rotation, out x, out z);
+                RotateAroundOrigin(localX, localZ, angle, out x, out z);
+
                 x += pos.x;
                 z += pos.z;
                 rotation += angle;
@@ -81,6 +82,7 @@ class TrackUtilities
 
                 distance -= straightAwayLength + curveLength;
             }
+            angle += math.PI / 2.0f;
         }
     }
 
@@ -94,7 +96,8 @@ class TrackUtilities
     private static void GetCurvePiecePosition(float localDistance, int lane, out float x, out float z, out float rotation)
     {
         float radius = GetCurveRadius(lane);
-        float angle = localDistance / radius;
+        float length = GetCurveLength(lane);
+        float angle = localDistance / length;
         x = MID_RADIUS - math.cos(angle) * radius;
         z = math.sin(angle) * radius;
         rotation = angle;

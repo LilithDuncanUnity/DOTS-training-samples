@@ -21,6 +21,7 @@ partial struct TrackGenerationSystem : ISystem
 
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<TrackConfig>();
         m_TransformFromEntity = new TransformAspect.EntityLookup(ref state, false);
     }
 

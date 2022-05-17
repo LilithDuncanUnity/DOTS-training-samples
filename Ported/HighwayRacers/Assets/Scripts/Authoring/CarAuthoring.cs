@@ -18,9 +18,17 @@ class CarBaker : Baker<CarAuthoring>
     {        
         AddComponent<CarColor>();
         AddComponent<CarDirection>();
-        AddComponent<CarPosition>();
+        AddComponent<CarPosition>(new CarPosition
+        {
+            currentLane = 0,
+            distance = 0
+        });
         AddComponent<CarProperties>();
-        AddComponent<CarSpeed>();
+        AddComponent<CarSpeed>(new CarSpeed
+        {
+            currentSpeed = 10.0f,
+            desiredSpeed = 10.0f
+        });
         AddComponent(new CarCameraPoint()
         {
             CameraPoint = GetEntity(authoring.CarCameraPoint),

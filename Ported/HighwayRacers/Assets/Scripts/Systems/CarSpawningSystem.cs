@@ -11,7 +11,8 @@ partial struct CarSpawningSystem : ISystem
 {
     public void OnCreate(ref SystemState state)
     {
-        
+        state.RequireForUpdate<CarConfig>();
+        state.RequireForUpdate<TrackConfig>();
     }
 
     public void OnDestroy(ref SystemState state)
@@ -33,6 +34,7 @@ partial struct CarSpawningSystem : ISystem
         }
 
         var config = SystemAPI.GetSingleton<CarConfig>();
+        var trackConfig = SystemAPI.GetSingleton<TrackConfig>();
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
@@ -45,8 +47,12 @@ partial struct CarSpawningSystem : ISystem
        
         foreach (var vehicle in vehicles)
         {
-            float3 startingPos = new float3(75, -250, 50 + (random.NextFloat() * 100f - 50f));         
-            ecb.SetComponent(vehicle, new Translation { Value = startingPos});
+            float3 startingPos = new float3(75, 0, 50 + (random.NextFloat() * 100f - 50f));
+            ecb.SetComponent(vehicle, new CarPosition
+            {
+                distance = random.NextFloat(0, trackConfig.highwaySize),
+                currentLane = random.NextInt(4)
+            });
         }
 
         // This system should only run once at startup. So it disables itself after one update.
