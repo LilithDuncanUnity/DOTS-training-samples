@@ -4,7 +4,6 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
-using Unity.Physics.Systems;
 
 namespace HighwayRacers
 {
@@ -26,15 +25,15 @@ namespace HighwayRacers
 
             SelectedCar sc = SystemAPI.GetSingleton<SelectedCar>();
             Entity sce = SystemAPI.GetSingletonEntity<SelectedCar>();
-            foreach (var car in SystemAPI.Query<CarAspect>())
-            {
-                state.EntityManager.SetComponentData<SelectedCar>(sce, new()
-                {
-                    Selected = car.Entity
-                });
+            //foreach (var car in SystemAPI.Query<CarAspect>())
+            //{
+            //    state.EntityManager.SetComponentData<SelectedCar>(sce, new()
+            //    {
+            //        Selected = car.Entity
+            //    });
 
-                break;
-            }
+            //    break;
+            //}
         }
     }
 }
