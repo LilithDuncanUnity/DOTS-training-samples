@@ -10,3 +10,9 @@ struct TrackSectionPrefabs : IComponentData
     public Entity LinearPrefab;
     public Entity CurvedPrefab;
 }
+
+struct TrackSection : IComponentData
+{
+    public int SectionIndex;
+}
+
