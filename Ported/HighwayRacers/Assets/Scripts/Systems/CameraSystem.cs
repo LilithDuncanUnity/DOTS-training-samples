@@ -27,15 +27,18 @@ namespace HighwayRacers
             m_TransformFromEntity.Update(ref state);
 
             var sc = SystemAPI.GetSingleton<SelectedCar>();
-            var cc = SystemAPI.GetSingleton<CameraConfig>();
             if (sc.Selected != Entity.Null)
             {
                 // how to set active?
                 var selectedCarTransform = m_TransformFromEntity[state.EntityManager
                     .GetComponentData<CarCameraPoint>(sc.Selected).CameraPoint];
-                var carCameraTransform = m_TransformFromEntity[cc.CarCamera];
-                carCameraTransform.Position = selectedCarTransform.Position;
-                carCameraTransform.Rotation = selectedCarTransform.Rotation;
+                CameraManager.Instance.SetCarCameraTransform(selectedCarTransform.Rotation,
+                    selectedCarTransform.Position);
+                CameraManager.Instance.ToCarView();
+            }
+            else
+            {
+                CameraManager.Instance.ToTopDownView();
             }
         }
     }
