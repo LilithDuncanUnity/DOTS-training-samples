@@ -3,5 +3,6 @@ using Unity.Entities;
 
 struct CarSpeed : IComponentData
 {
-    public float defaultSpeed;
+    public float desiredSpeed;
+    public float currentSpeed;
 }

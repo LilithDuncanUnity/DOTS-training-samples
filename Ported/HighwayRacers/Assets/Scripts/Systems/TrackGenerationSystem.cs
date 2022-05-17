@@ -46,7 +46,7 @@ partial struct TrackGenerationSystem : ISystem
             prefabs = trackGenerate.Sections;
         }
         TrackConfig config = SystemAPI.GetSingleton<TrackConfig>();
-        float straightPieceLength = (config.highwaySize - CURVE_LANE0_RADIUS * 4) / 4;
+        float straightPieceLength = TrackUtilities.GetStraightawayLength(config.highwaySize);
         float3 linearSectionScale = new float3(1.0f, 1.0f, straightPieceLength / BASE_SCALE_Y);
 
         for (int sectionIndex = 0; sectionIndex < 4; ++sectionIndex) 

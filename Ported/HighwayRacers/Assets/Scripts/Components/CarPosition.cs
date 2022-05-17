@@ -1,7 +1,8 @@
 using Unity.Entities;
 
 
-struct CarLane : IComponentData
+struct CarPosition : IComponentData
 {
+    public float distance;  // How far along the lane are we
     public int currentLane;  //Change to enum when we have the lanes available?
 }

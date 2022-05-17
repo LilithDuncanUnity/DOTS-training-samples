@@ -18,7 +18,7 @@ class CarBaker : Baker<CarAuthoring>
     {        
         AddComponent<CarColor>();
         AddComponent<CarDirection>();
-        AddComponent<CarLane>();
+        AddComponent<CarPosition>();
         AddComponent<CarProperties>();
         AddComponent<CarSpeed>();
         AddComponent(new CarCameraPoint()
