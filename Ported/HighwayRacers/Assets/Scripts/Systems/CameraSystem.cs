@@ -7,7 +7,7 @@ using UnityEngine;
 namespace HighwayRacers
 {
     [UpdateAfter(typeof(CarSelectionSystem))]
-    [UpdateAfter(typeof(TankMovementSystem))]
+    [UpdateAfter(typeof(CarMovementSystem))]
     public partial struct CameraSystem : ISystem
     {
         private TransformAspect.EntityLookup m_TransformFromEntity;
