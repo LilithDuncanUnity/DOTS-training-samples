@@ -35,6 +35,11 @@ class CarBaker : Baker<CarAuthoring>
             CameraPoint = GetEntity(authoring.CarCameraPoint),
         });
 
+        AddComponent(new CarPeers()
+        {
+            CarInFront = Entity.Null
+        });
+
         var buffer = AddBuffer<ChildrenWithRenderer>().Reinterpret<Entity>();
         foreach (var renderer in GetComponentsInChildren<UnityEngine.MeshRenderer>())
         {
