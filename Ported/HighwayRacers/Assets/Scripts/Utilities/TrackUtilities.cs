@@ -161,4 +161,44 @@ class TrackUtilities
 
         return accumulatedOtherDistance;
     }
+
+    public static bool AreasOverlap(float lane0Length, int lane1, float distance1Back, float distance1Front, int lane2, float distance2Back, float distance2Front)
+    {
+        // when we have lane interpolation implement this; lanes are just ints now
+        // if (!LanesOverlap(lane1, lane2)) return false;
+        if (lane1 != lane2) return false;
+
+        return DistancesOverlap(lane0Length, lane1, distance1Back, distance1Front, lane2, distance2Back, distance2Front);
+    }
+    public static bool DistancesOverlap(float lane0Length, int d1Lane, float d1Back, float d1Front, int d2Lane, float d2Back, float d2Front)
+    {
+        d1Back %= GetLaneLength(lane0Length, d1Lane);
+        d1Front %= GetLaneLength(lane0Length, d1Lane);
+        d2Back = GetEquivalentDistance(lane0Length, d2Back, d2Lane, d1Lane);
+        d2Front = GetEquivalentDistance(lane0Length, d2Front, d2Lane, d1Lane);
+
+        bool backContained = false;
+        if (d1Back < d1Front)
+        {
+            backContained = d1Back <= d2Back && d2Back <= d1Front;
+        }
+        else
+        {
+            backContained = d1Back <= d2Back || d2Back <= d1Front;
+        }
+        if (backContained) return true;
+
+        bool frontContained = false;
+        if (d1Back < d1Front)
+        {
+            frontContained = d1Back <= d2Front && d2Front <= d1Front;
+        }
+        else
+        {
+            frontContained = d1Back <= d2Front || d2Front <= d1Front;
+        }
+        if (frontContained) return true;
+
+        return false;
+    }
 }

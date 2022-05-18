@@ -26,14 +26,14 @@ partial struct CarPeerSystem : ISystem
         public int Compare(CarAspect a, CarAspect b)
         {
             if (a.Lane != b.Lane) return b.Lane.CompareTo(a.Lane);
-            else return b.Position.CompareTo(a.Position);
+            else return b.Distance.CompareTo(a.Distance);
         }
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        TrackConfig config = SystemAPI.GetSingleton<TrackConfig>();
-        NativeArray<CarAspect> cars = CollectionHelper.CreateNativeArray<CarAspect>(config.numberOfCars, Allocator.Temp);
+        TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
+        NativeArray<CarAspect> cars = CollectionHelper.CreateNativeArray<CarAspect>(track.numberOfCars, Allocator.Temp);
         int i = 0;
 
         foreach (var car in SystemAPI.Query<CarAspect>())
@@ -73,5 +73,49 @@ partial struct CarPeerSystem : ISystem
                 car.CarInFront = cars[j + 1].Entity;
             }
         }
+
+
+        // calculate can merge
+        foreach (var car in cars)
+        {
+            if (car.Lane == 0) car.CanMergeRight = false;
+            else car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, in cars, in track);
+
+
+            if (car.Lane == 3) car.CanMergeLeft = false;
+            else car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, in cars, in track);
+        }
+    }
+
+    bool CanMergeToLane(in CarAspect car, int lane, in NativeArray<CarAspect> cars, in TrackConfig track)
+    {
+        float distanceBack = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceBack(in car, in track) - car.MergeSpace, car.Lane, lane);
+        float distanceFront = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceFront(in car, in track) - car.MergeSpace, car.Lane, lane);
+
+        // TODO: optimize this from n2
+        foreach (var other in cars)
+        {
+            if (car.Entity == other.Entity) continue;
+            if (TrackUtilities.AreasOverlap(track.highwaySize, lane, distanceBack, distanceFront, other.Lane, GetDistanceBack(in other, in track),
+                GetDistanceFront(in other, in track)))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    float GetDistanceBack(in CarAspect car, in TrackConfig track)
+    {
+        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
+        return (car.Distance - car.DistanceToBack)
+            + Mathf.Floor((car.Distance - car.DistanceToBack) / laneLen) * laneLen;
+    }
+
+    float GetDistanceFront(in CarAspect car, in TrackConfig track)
+    {
+        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
+        return (car.Distance + car.DistanceToFront)
+            + Mathf.Floor((car.Distance + car.DistanceToFront) / laneLen) * laneLen;
     }
 }

@@ -21,6 +21,9 @@ namespace HighwayRacers
                 numberOfCars = 0,
                 dirty = false
             };
+
+            state.RequireForUpdate<TrackConfigMinMax>();
+            state.RequireForUpdate<TrackConfig>();
         }
 
         public void OnDestroy(ref SystemState state)

@@ -5,6 +5,8 @@ using Unity.Rendering;
 class CarAuthoring : UnityEngine.MonoBehaviour
 {
     public UnityEngine.Transform CarCameraPoint;
+    public float DistanceToFront = 1;
+    public float DistanceToBack = 1;
 }
 
 [TemporaryBakingType]
@@ -37,7 +39,9 @@ class CarBaker : Baker<CarAuthoring>
 
         AddComponent(new CarPeers()
         {
-            CarInFront = Entity.Null
+            CarInFront = Entity.Null,
+            DistanceToBack = authoring.DistanceToBack,
+            DistanceToFront = authoring.DistanceToFront
         });
 
         var buffer = AddBuffer<ChildrenWithRenderer>().Reinterpret<Entity>();
