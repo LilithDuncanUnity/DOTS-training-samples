@@ -13,6 +13,5 @@ struct TrackSectionPrefabs : IComponentData
 
 struct TrackSection : IComponentData
 {
-    public int SectionIndex;
 }
 

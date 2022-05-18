@@ -15,7 +15,7 @@ partial class CarMovementSystem : SystemBase
         var dt = Time.DeltaTime;
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
 
-        Entities
+        Dependency = Entities
             .ForEach((Entity entity, TransformAspect transform, ref CarPosition carPosition, in CarSpeed carSpeed) =>
             {
                 carPosition.distance += dt * carSpeed.currentSpeed;
@@ -42,7 +42,7 @@ partial class CarMovementSystem : SystemBase
                 //    float maxDistanceDiff = Mathf.Max(0, distToCarInFront - Highway.MIN_DIST_BETWEEN_CARS);
                 //    velocityPosition = Mathf.Min(velocityPosition, maxDistanceDiff / dt);
                 //}
-            }).Run();
+            }).ScheduleParallel(Dependency);
     }
 
     private void UpdateColor()

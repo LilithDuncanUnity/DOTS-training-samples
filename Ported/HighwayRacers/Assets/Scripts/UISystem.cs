@@ -46,6 +46,13 @@ namespace HighwayRacers
                 }
 
                 SystemAPI.SetSingleton(tc);
+
+                var trackGenerationSystem = state.World.GetExistingSystem<TrackGenerationSystem>();
+                trackGenerationSystem.Struct.RegenerateTrack(state.EntityManager);
+
+                var carSpawningSystem = state.World.GetExistingSystem<CarSpawningSystem>();
+                carSpawningSystem.Struct.RespawnCars(state.EntityManager);
+
                 shouldUpdate = false;
                 shouldUpdateUI = true;
             }
