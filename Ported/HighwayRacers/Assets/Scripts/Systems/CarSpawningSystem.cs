@@ -9,7 +9,6 @@ using Unity.Transforms;
 [BurstCompile]
 partial struct CarSpawningSystem : ISystem
 {
-    private EntityQuery m_BaseColorQuery;
     private EntityQuery m_CarQuery;
 
     public bool NeedsRegenerating
@@ -23,7 +22,6 @@ partial struct CarSpawningSystem : ISystem
     {
         state.RequireForUpdate<CarConfig>();
         state.RequireForUpdate<TrackConfig>();
-        m_BaseColorQuery = state.GetEntityQuery(typeof(URPMaterialPropertyBaseColor));
         m_CarQuery = state.GetEntityQuery(typeof(CarPosition));
 
         NeedsRegenerating = true;
@@ -59,7 +57,6 @@ partial struct CarSpawningSystem : ISystem
             ecb.Instantiate(config.CarPrefab, vehicles);
 
             var random = Random.CreateFromIndex(501);
-            var queryMask = m_BaseColorQuery.GetEntityQueryMask();
 
             foreach (var vehicle in vehicles)
             {
@@ -94,8 +91,8 @@ partial struct CarSpawningSystem : ISystem
                 // https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
                 hue = (hue + 0.618034005f) % 1;
                 var color = UnityEngine.Color.HSVToRGB(hue, 1.0f, 1.0f);
-                URPMaterialPropertyBaseColor baseColor = new URPMaterialPropertyBaseColor { Value = (UnityEngine.Vector4)color };
-                ecb.SetComponentForLinkedEntityGroup(vehicle, queryMask, baseColor);
+                CarColor baseColor = new CarColor { currentColor = new float3(color.r, color.g, color.b) };
+                ecb.SetComponent(vehicle, baseColor);
             }
 
             NeedsRegenerating = false;

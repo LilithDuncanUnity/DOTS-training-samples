@@ -21,6 +21,10 @@ class CarBaker : Baker<CarAuthoring>
     {        
         AddComponent<CarColor>();
         AddComponent<CarDirection>();
+        AddComponent(new CarPreview()
+        {
+            Preview = false
+        });
         AddComponent<CarPosition>(new CarPosition
         {
             currentLane = 0,
