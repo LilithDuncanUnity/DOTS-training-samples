@@ -8,6 +8,12 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+public struct CarGroupingBucket
+{
+    public int firstIndex;
+    public int lastIndex;
+}
+
 [UpdateAfter(typeof(CarSpawningSystem))]
 partial struct CarPeerSystem : ISystem
 {
@@ -74,6 +80,30 @@ partial struct CarPeerSystem : ISystem
             }
         }
 
+        int numBucketsPerLane = (int)math.ceil(track.highwaySize / 20.0f);
+        NativeArray<CarGroupingBucket> laneBuckets = new NativeArray<CarGroupingBucket>(4 * numBucketsPerLane, Allocator.Temp);
+        NativeArray<float> laneLengths = new NativeArray<float>(4, Allocator.Temp);
+        laneLengths[0] = TrackUtilities.GetLaneLength(track.highwaySize, 0);
+        laneLengths[1] = TrackUtilities.GetLaneLength(track.highwaySize, 1);
+        laneLengths[2] = TrackUtilities.GetLaneLength(track.highwaySize, 2);
+        laneLengths[3] = TrackUtilities.GetLaneLength(track.highwaySize, 3);
+
+        for (int carIndex = 0; carIndex < cars.Length; ++carIndex)
+        {
+            int bucketIndex = CalculateBucket(laneLengths, numBucketsPerLane, cars[carIndex].Distance, cars[carIndex].Lane);
+            
+            CarGroupingBucket bucket = laneBuckets[bucketIndex];
+            if (bucket.firstIndex == 0 && bucket.lastIndex == 0) 
+            {
+                bucket.firstIndex = carIndex;
+                bucket.lastIndex = carIndex;
+            }
+            else
+            {
+                bucket.lastIndex = math.max(bucket.lastIndex, carIndex);
+            }
+            laneBuckets[bucketIndex] = bucket;
+        }
 
         // calculate can merge
         foreach (var car in cars)
@@ -85,19 +115,31 @@ partial struct CarPeerSystem : ISystem
             if (car.Lane == 3) car.CanMergeLeft = false;
             else car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, in cars, in track);
         }
+
+        laneBuckets.Dispose();
+        laneLengths.Dispose();
     }
 
-    bool CanMergeToLane(in CarAspect car, int lane, in NativeArray<CarAspect> cars, in TrackConfig track)
+    int CalculateBucket(NativeArray<float> laneLengths, int numBucketsPerLane, float distance, int lane) 
     {
-        float distanceBack = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceBack(in car, in track) - car.MergeSpace, car.Lane, lane);
-        float distanceFront = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceFront(in car, in track) - car.MergeSpace, car.Lane, lane);
+        int bucketIndex = numBucketsPerLane * lane;
+        distance = TrackUtilities.WrapDistance(laneLengths[0], distance, lane);
+        int laneBucketOffset = (int)math.floor(numBucketsPerLane * distance / laneLengths[lane]);
+        bucketIndex += laneBucketOffset;
+        return bucketIndex;
+    }
+
+    bool CanMergeToLane(in CarAspect car, int lane, in NativeArray<CarAspect> cars, in NativeArray<CarGroupingBucket> laneBuckets, int numBucketsPerLane, in NativeArray<float> laneLengths)
+    {
+        float distanceBack = TrackUtilities.GetEquivalentDistance(laneLengths[0], GetDistanceBack(in car, laneLengths[0]) - car.MergeSpace, car.Lane, lane);
+        float distanceFront = TrackUtilities.GetEquivalentDistance(laneLengths[0], GetDistanceFront(in car, laneLengths[0]) - car.MergeSpace, car.Lane, lane);
 
         // TODO: optimize this from n2
         foreach (var other in cars)
         {
             if (car.Entity == other.Entity) continue;
-            if (TrackUtilities.AreasOverlap(track.highwaySize, lane, distanceBack, distanceFront, other.Lane, GetDistanceBack(in other, in track),
-                GetDistanceFront(in other, in track)))
+            if (TrackUtilities.AreasOverlap(laneLengths[0], lane, distanceBack, distanceFront, other.Lane, GetDistanceBack(in other, laneLengths[0]),
+                GetDistanceFront(in other, laneLengths[0])))
             {
                 return false;
             }
@@ -105,16 +147,16 @@ partial struct CarPeerSystem : ISystem
         return true;
     }
 
-    float GetDistanceBack(in CarAspect car, in TrackConfig track)
+    float GetDistanceBack(in CarAspect car, float lane0Length)
     {
-        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
+        var laneLen = TrackUtilities.GetLaneLength(lane0Length, car.Lane);
         return (car.Distance - car.DistanceToBack)
             + Mathf.Floor((car.Distance - car.DistanceToBack) / laneLen) * laneLen;
     }
 
-    float GetDistanceFront(in CarAspect car, in TrackConfig track)
+    float GetDistanceFront(in CarAspect car, float lane0Length)
     {
-        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
+        var laneLen = TrackUtilities.GetLaneLength(lane0Length, car.Lane);
         return (car.Distance + car.DistanceToFront)
             + Mathf.Floor((car.Distance + car.DistanceToFront) / laneLen) * laneLen;
     }
