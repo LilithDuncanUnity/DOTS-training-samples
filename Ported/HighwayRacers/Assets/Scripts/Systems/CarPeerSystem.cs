@@ -78,19 +78,23 @@ partial struct CarPeerSystem : ISystem
         // calculate can merge
         foreach (var car in cars)
         {
-            if (car.Lane == 0) car.CanMergeRight = false;
-            else car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, in cars, in track);
+            if (car.Lane == 0) 
+                car.CanMergeRight = false;
+            else 
+                car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, in cars, in track);
 
 
-            if (car.Lane == 3) car.CanMergeLeft = false;
-            else car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, in cars, in track);
+            if (car.Lane == 3) 
+                car.CanMergeLeft = false;
+            else 
+                car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, in cars, in track);
         }
     }
 
     bool CanMergeToLane(in CarAspect car, int lane, in NativeArray<CarAspect> cars, in TrackConfig track)
     {
         float distanceBack = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceBack(in car, in track) - car.MergeSpace, car.Lane, lane);
-        float distanceFront = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceFront(in car, in track) - car.MergeSpace, car.Lane, lane);
+        float distanceFront = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceFront(in car, in track) + car.MergeSpace, car.Lane, lane);
 
         // TODO: optimize this from n2
         foreach (var other in cars)

@@ -258,7 +258,7 @@ MonoBehaviour:
   MinDistanceInFront: 2
   MaxDistanceInFront: 15
   MinMergeSpace: 6
-  MaxMergeSpace: 52
+  MaxMergeSpace: 12
   MinOvertakeEagerness: 0.7
   MaxOvertakeEagerness: 2
 --- !u!4 &855152143
