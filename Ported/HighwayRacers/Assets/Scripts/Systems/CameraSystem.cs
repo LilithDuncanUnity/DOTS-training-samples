@@ -24,22 +24,22 @@ namespace HighwayRacers
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            m_TransformFromEntity.Update(ref state);
+            //m_TransformFromEntity.Update(ref state);
 
-            var sc = SystemAPI.GetSingleton<SelectedCar>();
-            if (sc.Selected != Entity.Null)
-            {
-                // how to set active?
-                var selectedCarTransform = m_TransformFromEntity[state.EntityManager
-                    .GetComponentData<CarCameraPoint>(sc.Selected).CameraPoint];
-                CameraManager.Instance.SetCarCameraTransform(selectedCarTransform.Rotation,
-                    selectedCarTransform.Position);
-                CameraManager.Instance.ToCarView();
-            }
-            else
-            {
-                CameraManager.Instance.ToTopDownView();
-            }
+            //var sc = SystemAPI.GetSingleton<SelectedCar>();
+            //if (sc.Selected != Entity.Null)
+            //{
+            //    // how to set active?
+            //    var selectedCarTransform = m_TransformFromEntity[state.EntityManager
+            //        .GetComponentData<CarCameraPoint>(sc.Selected).CameraPoint];
+            //    CameraManager.Instance.SetCarCameraTransform(selectedCarTransform.Rotation,
+            //        selectedCarTransform.Position);
+            //    CameraManager.Instance.ToCarView();
+            //}
+            //else
+            //{
+            //    CameraManager.Instance.ToTopDownView();
+            //}
         }
     }
 }

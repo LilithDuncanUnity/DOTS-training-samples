@@ -3,7 +3,6 @@ using Unity.Entities;
 class CarConfigAuthoring : UnityEngine.MonoBehaviour
 {
     public UnityEngine.GameObject CarPrefab;
-    public int CarCount;
 }
 
 class ConfigBaker : Baker<CarConfigAuthoring>
@@ -13,7 +12,6 @@ class ConfigBaker : Baker<CarConfigAuthoring>
         AddComponent(new CarConfig
         {
             CarPrefab = GetEntity(authoring.CarPrefab),
-            CarCount = authoring.CarCount,
         });
     }
 }

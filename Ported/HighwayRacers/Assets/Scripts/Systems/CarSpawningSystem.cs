@@ -9,9 +9,24 @@ using Unity.Transforms;
 [BurstCompile]
 partial struct CarSpawningSystem : ISystem
 {
+    private EntityQuery m_BaseColorQuery;
+    private EntityQuery m_CarQuery;
+
+    public bool NeedsRegenerating
+    {
+        get => _needsRegenerating;
+        set => _needsRegenerating = value;
+    }
+    private bool _needsRegenerating;
+
     public void OnCreate(ref SystemState state)
     {
-        
+        state.RequireForUpdate<CarConfig>();
+        state.RequireForUpdate<TrackConfig>();
+        m_BaseColorQuery = state.GetEntityQuery(typeof(URPMaterialPropertyBaseColor));
+        m_CarQuery = state.GetEntityQuery(typeof(CarPosition));
+
+        NeedsRegenerating = true;
     }
 
     public void OnDestroy(ref SystemState state)
@@ -32,24 +47,54 @@ partial struct CarSpawningSystem : ISystem
             });
         }
 
-        var config = SystemAPI.GetSingleton<CarConfig>();
+        if (NeedsRegenerating) {
+            var config = SystemAPI.GetSingleton<CarConfig>();
+            var trackConfig = SystemAPI.GetSingleton<TrackConfig>();
 
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+            var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+            var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-        var allocator = state.WorldUnmanaged.UpdateAllocator.ToAllocator;
-        var vehicles = CollectionHelper.CreateNativeArray<Entity>(config.CarCount, allocator);
-        ecb.Instantiate(config.CarPrefab, vehicles);
+            var allocator = state.WorldUnmanaged.UpdateAllocator.ToAllocator;
+            var vehicles = CollectionHelper.CreateNativeArray<Entity>(trackConfig.numberOfCars, allocator);
+            ecb.Instantiate(config.CarPrefab, vehicles);
 
-        var random = Random.CreateFromIndex(501);
-       
-        foreach (var vehicle in vehicles)
-        {
-            float3 startingPos = new float3(75, -250, 50 + (random.NextFloat() * 100f - 50f));         
-            ecb.SetComponent(vehicle, new Translation { Value = startingPos});
+            var random = Random.CreateFromIndex(501);
+            var queryMask = m_BaseColorQuery.GetEntityQueryMask();
+
+            foreach (var vehicle in vehicles)
+            {
+                float3 startingPos = new float3(75, 0, 50 + (random.NextFloat() * 100f - 50f));
+                ecb.SetComponent(vehicle, new CarPosition
+                {
+                    distance = random.NextFloat(0, trackConfig.highwaySize),
+                    currentLane = random.NextInt(4)
+                });
+
+                var hue = random.NextFloat();
+
+                // Helper to create any amount of colors as distinct from each other as possible.
+                // The logic behind this approach is detailed at the following address:
+                // https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+                hue = (hue + 0.618034005f) % 1;
+                var color = UnityEngine.Color.HSVToRGB(hue, 1.0f, 1.0f);
+                URPMaterialPropertyBaseColor baseColor = new URPMaterialPropertyBaseColor { Value = (UnityEngine.Vector4)color };
+                ecb.SetComponentForLinkedEntityGroup(vehicle, queryMask, baseColor);
+            }
+
+            NeedsRegenerating = false;
         }
+    }
 
-        // This system should only run once at startup. So it disables itself after one update.
-        state.Enabled = false;
+    public void RespawnCars(EntityManager entityManager)
+    {
+        // Remove the tracks that have already been created (if any)
+        NativeArray<Entity> entitiesToRemove = m_CarQuery.ToEntityArray(Allocator.Temp);
+        foreach (Entity entity in entitiesToRemove)
+        {
+            entityManager.DestroyEntity(entity);
+        }
+        entitiesToRemove.Dispose();
+
+        NeedsRegenerating = true;
     }
 }

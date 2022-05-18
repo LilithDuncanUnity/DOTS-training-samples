@@ -4,21 +4,28 @@ using Unity.Transforms;
 
 partial class CarMovementSystem : SystemBase
 {
+    protected override void OnCreate()
+    {
+        RequireForUpdate<TrackConfig>();
+
+        base.OnCreate();        
+    }
     protected override void OnUpdate()
     {
         var dt = Time.DeltaTime;
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
 
-        Entities
-            .WithAll<CarSpeed>()
-            .ForEach((Entity entity, TransformAspect transform, CarSpeed carSpeed) =>
+        Dependency = Entities
+            .ForEach((Entity entity, TransformAspect transform, ref CarPosition carPosition, in CarSpeed carSpeed) =>
             {
-//                carPosition.distance += dt * speed.currentSpeed;
-//                TrackUtilities.GetCarPosition(track.highwaySize, carPosition.distance, )
-                var pos = transform.Position;
-                transform.Position = new float3(pos.x, pos.y, pos.z + 0.1f);
+                carPosition.distance += dt * carSpeed.currentSpeed;
 
-                float targetSpeed = carSpeed.defaultSpeed;
+                TrackUtilities.GetCarPosition(track.highwaySize, carPosition.distance, carPosition.currentLane, out float posX, out float posZ, out float outRotation);
+                var pos = transform.Position;
+                transform.Position = new float3(posX, pos.y, posZ);
+                transform.Rotation = quaternion.RotateY(outRotation);
+
+                float targetSpeed = carSpeed.desiredSpeed;
                 //Get the Car in front
                 //Get the distance to the car in front if it's not null
 
@@ -35,7 +42,7 @@ partial class CarMovementSystem : SystemBase
                 //    float maxDistanceDiff = Mathf.Max(0, distToCarInFront - Highway.MIN_DIST_BETWEEN_CARS);
                 //    velocityPosition = Mathf.Min(velocityPosition, maxDistanceDiff / dt);
                 //}
-            }).Run();
+            }).ScheduleParallel(Dependency);
     }
 
     private void UpdateColor()
