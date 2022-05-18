@@ -15,12 +15,16 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     public readonly Entity Entity;
     public int Lane => m_Position.ValueRO.currentLane;
 
+    public float CurrentSpeed => m_Speed.ValueRO.currentSpeed;
+    public float DesiredSpeed => m_Properties.ValueRO.desiredSpeed;
+    public Color DefaultColor => m_Color.ValueRO.defaultColor;
+    public Color FastColor => m_Color.ValueRO.fastColor;
+    public Color SlowColor => m_Color.ValueRO.slowColor;
+
 
     public float Distance => m_Position.ValueRO.distance;
 
     public bool Preview => m_Preview.ValueRO.Preview;
-
-    public Color Color => new Color(m_Color.ValueRO.currentColor.x, m_Color.ValueRO.currentColor.y, m_Color.ValueRO.currentColor.z);
 
     public float DistanceToBack => m_Peers.ValueRO.DistanceToBack;
 

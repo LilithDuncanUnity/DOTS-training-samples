@@ -1,7 +1,10 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 struct CarColor : IComponentData
 {
-    public float3 currentColor;
+    public Color defaultColor;
+    public Color fastColor;
+    public Color slowColor;
 }

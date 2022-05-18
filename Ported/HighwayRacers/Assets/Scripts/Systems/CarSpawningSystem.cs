@@ -60,7 +60,6 @@ partial struct CarSpawningSystem : ISystem
 
             foreach (var vehicle in vehicles)
             {
-                float3 startingPos = new float3(75, 0, 50 + (random.NextFloat() * 100f - 50f));
                 ecb.SetComponent(vehicle, new CarPosition
                 {
                     distance = random.NextFloat(0, trackConfig.highwaySize),
@@ -84,15 +83,7 @@ partial struct CarSpawningSystem : ISystem
                     overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness)
                 });
 
-                var hue = random.NextFloat();
-
-                // Helper to create any amount of colors as distinct from each other as possible.
-                // The logic behind this approach is detailed at the following address:
-                // https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
-                hue = (hue + 0.618034005f) % 1;
-                var color = UnityEngine.Color.HSVToRGB(hue, 1.0f, 1.0f);
-                CarColor baseColor = new CarColor { currentColor = new float3(color.r, color.g, color.b) };
-                ecb.SetComponent(vehicle, baseColor);
+                ecb.SetComponent(vehicle, new CarColor { defaultColor = UnityEngine.Color.white, fastColor = UnityEngine.Color.green, slowColor = UnityEngine.Color.red });
             }
 
             NeedsRegenerating = false;
