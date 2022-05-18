@@ -980,12 +980,12 @@ MonoBehaviour:
   MainCamera: {fileID: 976377114}
   Bounds:
     serializedVersion: 2
-    x: 0
-    y: 0
-    width: 0
-    height: 0
-  moveSpeed: 20
-  transitionDuration: 3
+    x: -120
+    y: -215
+    width: 450
+    height: 520
+  moveSpeed: 60
+  transitionDuration: 1.5
 --- !u!4 &408021345
 Transform:
   m_ObjectHideFlags: 0
