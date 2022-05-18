@@ -203,7 +203,7 @@ MonoBehaviour:
   defaultNumberOfCars: 50
   defaultHighwaySize: 300
   minNumberOfCars: 0
-  maxNumberOfCars: 1000
+  maxNumberOfCars: 3000
   minHighwaySize: 170
   maxHighwaySize: 1000
 --- !u!4 &276398158
