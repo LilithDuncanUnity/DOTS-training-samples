@@ -64,6 +64,7 @@ class TrackUtilities
                 }
                 else
                 {
+                    pos += math.mul(quaternion.RotateY(angle), new float3(0, 0, straightAwayLength));
                     distance -= straightAwayLength;
                     GetCurvePiecePosition(distance, lane, out localX, out localZ, out rotation);
                 }
@@ -97,7 +98,7 @@ class TrackUtilities
     {
         float radius = GetCurveRadius(lane);
         float length = GetCurveLength(lane);
-        float angle = localDistance / length;
+        float angle = (math.PI / 2.0f) * (localDistance / length);
         x = MID_RADIUS - math.cos(angle) * radius;
         z = math.sin(angle) * radius;
         rotation = angle;
