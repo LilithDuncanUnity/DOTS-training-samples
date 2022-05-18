@@ -70,6 +70,23 @@ partial struct CarSpawningSystem : ISystem
                     currentLane = random.NextInt(4)
                 });
 
+                // setting current and desired to be the same on spawn. Current is what is modified from AI and tries to match desired
+                float localDesiredSpeed = random.NextFloat(config.MinDefaultSpeed, config.MaxDefaultSpeed);
+
+                ecb.SetComponent(vehicle, new CarSpeed
+                {
+                    currentSpeed = localDesiredSpeed
+                });
+
+                ecb.SetComponent(vehicle, new CarProperties
+                {
+                    desiredSpeed = localDesiredSpeed,
+                    overTakePercent = random.NextFloat(config.MinOvertakeSpeedScale, config.MaxOvertakeSpeedScale),
+                    minDistanceInFront = random.NextFloat(config.MinDistanceInFront, config.MaxDistanceInFront),
+                    mergeSpace = random.NextFloat(config.MinMergeSpace, config.MaxMergeSpace),
+                    overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness)
+                });
+
                 var hue = random.NextFloat();
 
                 // Helper to create any amount of colors as distinct from each other as possible.

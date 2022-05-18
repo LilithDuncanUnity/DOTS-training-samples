@@ -251,6 +251,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CarPrefab: {fileID: 1999935204370666, guid: 893c9b2da4b278c45ba1ac2140e02aad, type: 3}
+  MinDefaultSpeed: 10
+  MaxDefaultSpeed: 40
+  MinOvertakeSpeedScale: 1.2
+  MaxOvertakeSpeedScale: 2
+  MinDistanceInFront: 2
+  MaxDistanceInFront: 15
+  MinMergeSpace: 6
+  MaxMergeSpace: 52
+  MinOvertakeEagerness: 0.7
+  MaxOvertakeEagerness: 2
 --- !u!4 &855152143
 Transform:
   m_ObjectHideFlags: 0
