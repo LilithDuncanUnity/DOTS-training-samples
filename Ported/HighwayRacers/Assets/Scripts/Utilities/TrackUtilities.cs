@@ -122,4 +122,43 @@ class TrackUtilities
         return distance - math.floor(distance / l) * l;
     }
 
+    public static float GetEquivalentDistance(float lane0Length, float distance, int lane, int otherLane)
+    {
+        // keep distance in [0, length)
+        distance = WrapDistance(lane0Length, distance, lane);
+
+        float accumulatedOtherDistance = 0.0f;
+
+        float straightAwayLength = GetStraightawayLength(lane0Length);
+        float curveLength = GetCurveLength(lane);
+        float otherCurveLength = GetCurveLength(otherLane);
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (distance < straightAwayLength + curveLength) 
+            {
+                if (distance <= straightAwayLength)
+                {
+                    accumulatedOtherDistance += distance;
+                }
+                else
+                {
+                    accumulatedOtherDistance += straightAwayLength;
+                    distance -= straightAwayLength; 
+                    
+                    // We are in the curve section. Use the percentage along this lanes curve to calculate the distance along other curve
+                    float otherCurveDistance = otherCurveLength * (distance / curveLength);
+                    accumulatedOtherDistance += otherCurveDistance;
+                }
+                break;
+            }
+            else
+            {
+                distance -= straightAwayLength + curveLength;
+                accumulatedOtherDistance += straightAwayLength + otherCurveLength;
+            }
+        }
+
+        return accumulatedOtherDistance;
+    }
 }
