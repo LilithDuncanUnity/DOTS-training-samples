@@ -23,7 +23,8 @@ class CarBaker : Baker<CarAuthoring>
         AddComponent<CarDirection>();
         AddComponent(new CarPreview()
         {
-            Preview = false
+            Preview = false,
+            SecondaryPreview = false,
         });
         AddComponent<CarPosition>(new CarPosition
         {

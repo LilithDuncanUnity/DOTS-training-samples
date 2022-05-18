@@ -23,10 +23,15 @@ partial struct CarPeerSystem : ISystem
 
     struct CarComparer : IComparer<CarAspect>
     {
+        private float m_HighwaySize;
+        public CarComparer(in TrackConfig track)
+        {
+            m_HighwaySize = track.highwaySize;
+        }
         public int Compare(CarAspect a, CarAspect b)
         {
-            if (a.Lane != b.Lane) return b.Lane.CompareTo(a.Lane);
-            else return b.Distance.CompareTo(a.Distance);
+            if (a.Lane != b.Lane) return a.Lane.CompareTo(b.Lane);
+            else return TrackUtilities.WrapDistance(m_HighwaySize, a.Distance, a.Lane).CompareTo(TrackUtilities.WrapDistance(m_HighwaySize, b.Distance, b.Lane));
         }
     }
 
@@ -46,7 +51,7 @@ partial struct CarPeerSystem : ISystem
         // TODO: figure out how to sort only a subsection of the array
         if (i < cars.Length) return;
 
-        cars.Sort<CarAspect, CarComparer>(new CarComparer());
+        cars.Sort<CarAspect, CarComparer>(new CarComparer(in track));
 
         int lastLaneStart = 0;
         int lastLane = 0;

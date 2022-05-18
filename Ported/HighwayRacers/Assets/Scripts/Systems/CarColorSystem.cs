@@ -22,7 +22,29 @@ public partial struct CarColorSystem : ISystem
         bool preview = false;
         foreach (var car in SystemAPI.Query<CarAspect>())
         {
-            if (car.Preview) preview = true;
+            if (car.Preview)
+            {
+                preview = true;
+                if (car.CarInFront != Entity.Null)
+                {
+                    state.EntityManager.SetComponentData(car.CarInFront, new CarPreview()
+                    {
+                        Preview = false,
+                        SecondaryPreview = true
+                    });
+                }
+            }
+            else
+            {
+                if (car.CarInFront != Entity.Null)
+                {
+                    state.EntityManager.SetComponentData(car.CarInFront, new CarPreview()
+                    {
+                        Preview = state.EntityManager.GetComponentData<CarPreview>(car.CarInFront).Preview,
+                        SecondaryPreview = false
+                    });
+                }
+            }
         }
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
@@ -34,6 +56,10 @@ public partial struct CarColorSystem : ISystem
             if (car.Preview)
             {
                 ecb.SetComponentForLinkedEntityGroup(car.Entity, queryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)Color.magenta });
+            }
+            else if (car.SecondaryPreview)
+            {
+                ecb.SetComponentForLinkedEntityGroup(car.Entity, queryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)Color.cyan });
             }
             else
             {

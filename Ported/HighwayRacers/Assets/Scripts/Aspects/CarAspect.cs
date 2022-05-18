@@ -25,6 +25,7 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     public float Distance => m_Position.ValueRO.distance;
 
     public bool Preview => m_Preview.ValueRO.Preview;
+    public bool SecondaryPreview => m_Preview.ValueRO.SecondaryPreview;
 
     public float DistanceToBack => m_Peers.ValueRO.DistanceToBack;
 
