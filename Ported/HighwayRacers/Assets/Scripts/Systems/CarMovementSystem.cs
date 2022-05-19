@@ -22,8 +22,17 @@ partial class CarMovementSystem : SystemBase
             .ForEach((Entity entity, TransformAspect transform, CarAspect carAspect, in CarChangingLanes carCC, in CarAICacheAspect car) =>
             {
                 TrackUtilities.GetCarPosition(track.highwaySize, carAspect.Distance, carAspect.Lane,
-                    carCC.FromLane, carCC.Progress,
                     out float posX, out float posZ, out float outRotation);
+
+                if (carCC.FromLane != carCC.ToLane)
+                {
+                    float fromDistance = TrackUtilities.GetEquivalentDistance(track.highwaySize, carAspect.Distance, carCC.ToLane, carCC.FromLane);
+                    TrackUtilities.GetCarPosition(track.highwaySize, fromDistance, carCC.FromLane, out float fromX, out float fromZ, out float fromRot);
+                    posX = (1.0f - carCC.Progress) * fromX + carCC.Progress * posX;
+                    posZ = (1.0f - carCC.Progress) * fromZ + carCC.Progress * posZ;
+                    outRotation = (1.0f - carCC.Progress) * fromRot + carCC.Progress * outRotation;
+                }
+
                 var pos = transform.Position;
                 transform.Position = new float3(posX, pos.y, posZ);
                 transform.Rotation = quaternion.RotateY(outRotation);

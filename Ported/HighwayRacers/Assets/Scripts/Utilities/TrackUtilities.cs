@@ -12,19 +12,19 @@ class TrackUtilities
 
     public static float GetStraightawayLength(float lane0Length)
     {
-        return (lane0Length - GetCurveLength(0)*4) / 4;
+        return (lane0Length - GetCurveLength(0) * 4) / 4;
     }
 
-    public static float GetLaneLength(float lane0Length, float lane)
+    public static float GetLaneLength(float lane0Length, int lane)
     {
         float straightPieceLength = GetStraightawayLength(lane0Length);
         return straightPieceLength * 4 + GetCurveLength(lane) * 4;
     }
-    public static float GetCurveRadius(float lane)
+    public static float GetCurveRadius(int lane)
     {
         return CURVE_LANE0_RADIUS + lane * LANE_SPACING;
     }
-    public static float GetCurveLength(float lane)
+    public static float GetCurveLength(int lane)
     {
         return GetCurveRadius(lane) * math.PI / 2.0f;
     }
@@ -37,17 +37,10 @@ class TrackUtilities
     /// <param name="x"></param>
     /// <param name="z"></param>
     /// <param name="rotation">y rotation of the car, in radians.</param>
-    public static void GetCarPosition(float lane0Length, float distance, int lane, int fromLane, float laneProgress,
-        out float x, out float z, out float rotation)
+    public static void GetCarPosition(float lane0Length, float distance, int lane, out float x, out float z, out float rotation)
     {
-
-        float floatLane;
-
-        if (fromLane < lane) floatLane = fromLane + laneProgress;
-        else floatLane = fromLane - laneProgress;
-
         // keep distance in [0, length)
-        distance = WrapDistance(lane0Length, distance, floatLane);
+        distance = WrapDistance(lane0Length, distance, lane);
 
         float3 pos = float3.zero;
         quaternion rot = quaternion.identity;
@@ -58,7 +51,7 @@ class TrackUtilities
         rotation = 0;
 
         float straightAwayLength = GetStraightawayLength(lane0Length);
-        float curveLength = GetCurveLength(floatLane);
+        float curveLength = GetCurveLength(lane);
 
         for (int i = 0; i < 4; i++)
         {
@@ -67,13 +60,13 @@ class TrackUtilities
                 float localX, localZ;
                 if (distance < straightAwayLength)
                 {
-                    GetStraightPiecePosition(distance, floatLane, out localX, out localZ, out rotation);
+                    GetStraightPiecePosition(distance, lane, out localX, out localZ, out rotation);
                 }
                 else
                 {
                     pos += math.mul(quaternion.RotateY(angle), new float3(0, 0, straightAwayLength));
                     distance -= straightAwayLength;
-                    GetCurvePiecePosition(distance, floatLane, out localX, out localZ, out rotation);
+                    GetCurvePiecePosition(distance, lane, out localX, out localZ, out rotation);
                 }
                 RotateAroundOrigin(localX, localZ, angle, out x, out z);
 
@@ -94,14 +87,14 @@ class TrackUtilities
         }
     }
 
-    private static void GetStraightPiecePosition(float localDistance, float lane, out float x, out float z, out float rotation)
+    private static void GetStraightPiecePosition(float localDistance, int lane, out float x, out float z, out float rotation)
     {
         x = LANE_SPACING * ((NUM_LANES - 1) / 2f - lane);
         z = localDistance;
         rotation = 0;
     }
 
-    private static void GetCurvePiecePosition(float localDistance, float lane, out float x, out float z, out float rotation)
+    private static void GetCurvePiecePosition(float localDistance, int lane, out float x, out float z, out float rotation)
     {
         float radius = GetCurveRadius(lane);
         float length = GetCurveLength(lane);
@@ -123,7 +116,7 @@ class TrackUtilities
     /// <summary>
     /// Wraps distance to be in [0, l), where l is the length of the given lane.
     /// </summary>
-    public static float WrapDistance(float lane0Length, float distance, float lane)
+    public static float WrapDistance(float lane0Length, float distance, int lane)
     {
         float l = GetLaneLength(lane0Length, lane);
         return distance - math.floor(distance / l) * l;
@@ -142,7 +135,7 @@ class TrackUtilities
 
         for (int i = 0; i < 4; i++)
         {
-            if (distance < straightAwayLength + curveLength) 
+            if (distance < straightAwayLength + curveLength)
             {
                 if (distance <= straightAwayLength)
                 {
@@ -151,8 +144,8 @@ class TrackUtilities
                 else
                 {
                     accumulatedOtherDistance += straightAwayLength;
-                    distance -= straightAwayLength; 
-                    
+                    distance -= straightAwayLength;
+
                     // We are in the curve section. Use the percentage along this lanes curve to calculate the distance along other curve
                     float otherCurveDistance = otherCurveLength * (distance / curveLength);
                     accumulatedOtherDistance += otherCurveDistance;
@@ -167,45 +160,5 @@ class TrackUtilities
         }
 
         return accumulatedOtherDistance;
-    }
-
-    public static bool AreasOverlap(float lane0Length, int lane1, float distance1Back, float distance1Front, int lane2, float distance2Back, float distance2Front)
-    {
-        // when we have lane interpolation implement this; lanes are just ints now
-        // if (!LanesOverlap(lane1, lane2)) return false;
-        if (lane1 != lane2) return false;
-
-        return DistancesOverlap(lane0Length, lane1, distance1Back, distance1Front, lane2, distance2Back, distance2Front);
-    }
-    public static bool DistancesOverlap(float lane0Length, int d1Lane, float d1Back, float d1Front, int d2Lane, float d2Back, float d2Front)
-    {
-        d1Back %= GetLaneLength(lane0Length, d1Lane);
-        d1Front %= GetLaneLength(lane0Length, d1Lane);
-        d2Back = GetEquivalentDistance(lane0Length, d2Back, d2Lane, d1Lane);
-        d2Front = GetEquivalentDistance(lane0Length, d2Front, d2Lane, d1Lane);
-
-        bool backContained = false;
-        if (d1Back < d1Front)
-        {
-            backContained = d1Back <= d2Back && d2Back <= d1Front;
-        }
-        else
-        {
-            backContained = d1Back <= d2Back || d2Back <= d1Front;
-        }
-        if (backContained) return true;
-
-        bool frontContained = false;
-        if (d1Back < d1Front)
-        {
-            frontContained = d1Back <= d2Front && d2Front <= d1Front;
-        }
-        else
-        {
-            frontContained = d1Back <= d2Front || d2Front <= d1Front;
-        }
-        if (frontContained) return true;
-
-        return false;
     }
 }

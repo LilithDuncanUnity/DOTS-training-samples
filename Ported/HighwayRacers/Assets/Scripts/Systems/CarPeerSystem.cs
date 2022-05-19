@@ -32,6 +32,7 @@ partial struct CarPeerSystem : ISystem
         public Entity Car;
         public float Distance;
         public float WrappedDistance;
+        public float CurrentSpeed;
     }
 
     public struct CarLaneInfo
@@ -85,7 +86,8 @@ partial struct CarPeerSystem : ISystem
             {
                 Car = car.Entity,
                 Distance = distance,
-                WrappedDistance = TrackUtilities.WrapDistance(track.highwaySize, distance, car.Lane)
+                WrappedDistance = TrackUtilities.WrapDistance(track.highwaySize, distance, car.Lane),
+                CurrentSpeed = car.CurrentSpeed
             };
             laneInfo.CarCount++;
 
@@ -103,7 +105,8 @@ partial struct CarPeerSystem : ISystem
             {
                 float distanceAhead = carLane.LaneLength;
                 float distanceBehind = distanceAhead;
-                Entity carAhead = Entity.Null;
+                float carAheadSpeed = 0.0f;
+                Entity carInFront = Entity.Null;
 
                 if (carIndex > 0)
                 {
@@ -117,18 +120,21 @@ partial struct CarPeerSystem : ISystem
                 if (carIndex < carLane.CarCount - 1)
                 {
                     distanceAhead = TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex + 1].Distance - carLane.CarDistances[carIndex].Distance, laneIndex);
-                    carAhead = carLane.CarDistances[carIndex + 1].Car;
+                    carInFront = carLane.CarDistances[carIndex + 1].Car;
+                    carAheadSpeed = carLane.CarDistances[carIndex + 1].CurrentSpeed;
                 }
                 else if (carLane.CarCount > 1)
                 {
                     distanceAhead = carLane.LaneLength - TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex].Distance - carLane.CarDistances[0].Distance, laneIndex);
-                    carAhead = carLane.CarDistances[0].Car;
+                    carInFront = carLane.CarDistances[0].Car;
+                    carAheadSpeed = carLane.CarDistances[0].CurrentSpeed;
                 }
 
                 // Set the cached AI information to make later systems easier to write
                 state.EntityManager.SetComponentData(carLane.CarDistances[carIndex].Car, new CarAICache
                 {
-                    CarInFront = carAhead,
+                    CarInFront = carInFront,
+                    CarInFrontSpeed = carAheadSpeed,
                     CanMergeRight = false,
                     CanMergeLeft = false,
                     DistanceAhead = distanceAhead,

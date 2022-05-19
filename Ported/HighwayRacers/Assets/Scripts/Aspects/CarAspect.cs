@@ -34,7 +34,6 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     public Entity CarInFront
     {
         get => m_Peers.ValueRO.CarInFront;
-        set => m_Peers.ValueRW.CarInFront = value;
     }
 
     public bool CanMergeLeft
@@ -92,9 +91,11 @@ public readonly partial struct CarPositionAspect : IAspect<CarPositionAspect>
 {
     public readonly Entity Entity;
     private readonly RefRO<CarPosition> m_Position;
+    private readonly RefRO<CarSpeed> m_Speed;
 
     public int Lane => m_Position.ValueRO.currentLane;
     public float Distance => m_Position.ValueRO.distance;
+    public float CurrentSpeed => m_Speed.ValueRO.currentSpeed;
 }
 
 public readonly partial struct CarAICacheAspect : IAspect<CarAICacheAspect>
@@ -124,3 +125,73 @@ public readonly partial struct CarAICacheAspect : IAspect<CarAICacheAspect>
     public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
     public float MergeSpace => m_Properties.ValueRO.mergeSpace;
 }
+
+public readonly partial struct CarMergingAspect : IAspect<CarMergingAspect>
+{
+    public readonly Entity Entity;
+    private readonly RefRW<CarPosition> m_Position;
+    private readonly RefRO<CarAICache> m_Peers;
+    private readonly RefRO<CarProperties> m_Properties;
+    private readonly RefRW<CarChangingLanes> m_ChangingLanes;
+
+    public int Lane {
+        get => m_Position.ValueRO.currentLane;
+        set => m_Position.ValueRW.currentLane = value;
+    }
+    public float Distance
+    {
+        get => m_Position.ValueRO.distance;
+        set => m_Position.ValueRW.distance = value;
+    }
+
+    public bool IsMerging
+    {
+        get => m_ChangingLanes.ValueRO.FromLane != m_ChangingLanes.ValueRO.ToLane;
+    }
+    public float DistanceInFront
+    {
+        get => m_Peers.ValueRO.DistanceAhead;
+    }
+    public bool CanMergeLeft
+    {
+        get => m_Peers.ValueRO.CanMergeLeft;
+    }
+    public bool CanMergeRight
+    {
+        get => m_Peers.ValueRO.CanMergeRight;
+    }
+
+    public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
+    public float MergeSpace => m_Properties.ValueRO.mergeSpace;
+    public float MergeProgress
+    {
+        get => m_ChangingLanes.ValueRO.Progress;
+        set => m_ChangingLanes.ValueRW.Progress = value;
+    }
+
+    public void MergeLeft(float lane0Length)
+    {
+        Distance = TrackUtilities.GetEquivalentDistance(lane0Length, Distance, Lane, Lane + 1);
+        m_ChangingLanes.ValueRW.Progress = 0;
+        m_ChangingLanes.ValueRW.FromLane = Lane;
+        m_ChangingLanes.ValueRW.ToLane = Lane + 1;
+        Lane = Lane + 1;
+    }
+
+    public void MergeRight(float lane0Length)
+    {
+        Distance = TrackUtilities.GetEquivalentDistance(lane0Length, Distance, Lane, Lane - 1);
+        m_ChangingLanes.ValueRW.Progress = 0;
+        m_ChangingLanes.ValueRW.FromLane = Lane;
+        m_ChangingLanes.ValueRW.ToLane = Lane - 1;
+        Lane = Lane - 1;
+    }
+
+    public void ConcludeMerge()
+    {
+        m_ChangingLanes.ValueRW.FromLane = m_ChangingLanes.ValueRO.ToLane;
+        m_ChangingLanes.ValueRW.Progress = 0.0f;
+    }
+}
+
+
