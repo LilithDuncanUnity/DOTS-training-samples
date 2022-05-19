@@ -92,6 +92,25 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     }
 }
 
+public readonly partial struct UpdateColorAspect : IAspect<UpdateColorAspect>
+{
+    private readonly RefRO<CarSpeed> m_Speed;
+    private readonly RefRO<CarAICache> m_Peers;
+    private readonly RefRO<CarProperties> m_Properties;
+    private readonly RefRO<CarPreview> m_Preview;
+    public readonly Entity Entity;
+
+    public float CurrentSpeed => m_Speed.ValueRO.currentSpeed;
+
+    public float DistanceAhead => m_Peers.ValueRO.DistanceAhead;
+
+    public float DesiredSpeed => m_Properties.ValueRO.desiredSpeed;
+    public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
+
+    public bool Preview => m_Preview.ValueRO.Preview;
+    public bool SecondaryPreview => m_Preview.ValueRO.SecondaryPreview;
+}
+
 public readonly partial struct CarPositionAspect : IAspect<CarPositionAspect>
 {
     public readonly Entity Entity;
