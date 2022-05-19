@@ -205,7 +205,7 @@ MonoBehaviour:
   minNumberOfCars: 0
   maxNumberOfCars: 3000
   minHighwaySize: 170
-  maxHighwaySize: 1000
+  maxHighwaySize: 5000
   switchLanesSpeed: 10
 --- !u!4 &276398158
 Transform:
@@ -256,9 +256,9 @@ MonoBehaviour:
   MaxDefaultSpeed: 40
   MinOvertakeSpeedScale: 1.2
   MaxOvertakeSpeedScale: 2
-  MinDistanceInFront: 2
+  MinDistanceInFront: 6
   MaxDistanceInFront: 15
-  MinMergeSpace: 6
+  MinMergeSpace: 8
   MaxMergeSpace: 12
   MinOvertakeEagerness: 0.7
   MaxOvertakeEagerness: 2

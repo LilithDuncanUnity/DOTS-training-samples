@@ -66,7 +66,7 @@ public partial struct CarColorSystem : ISystem
             else
             {
                 Color color = Color.white;
-                if (car.CurrentSpeed > car.DesiredSpeed)
+                if (car.CurrentSpeed > car.DesiredSpeed || (car.DistanceAhead > car.MinDistanceInFront && car.CurrentSpeed < car.DesiredSpeed))
                 {
                     color = carColors.fastColor;
                 }

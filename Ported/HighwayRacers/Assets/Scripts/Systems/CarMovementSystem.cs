@@ -38,20 +38,15 @@ partial class CarMovementSystem : SystemBase
                 transform.Rotation = quaternion.RotateY(outRotation);
 
                 float targetSpeed = carAspect.DesiredSpeed;
-
-                if (carAspect.CarInFront != null)
+                if (carAspect.DistanceAhead < carAspect.MinDistanceInFront)
                 {
-                    if (car.DistanceAhead <carAspect.LeftMergeDistance)
-                    {
-                        var carSpeed = GetComponent<CarSpeed>(carAspect.CarInFront);
-                        float carInFrontSpeed = carSpeed.currentSpeed;
-                        targetSpeed = Mathf.Min(targetSpeed, carInFrontSpeed);
-                    }
+                    targetSpeed = math.min(carAspect.DesiredSpeed, carAspect.CarInFrontSpeed);
                 }
 
                 if (targetSpeed > carAspect.CurrentSpeed)
                 {
                     carAspect.CurrentSpeed = Mathf.Min(targetSpeed, carAspect.CurrentSpeed + carAspect.Acceleration * dt);
+                    carAspect.CurrentSpeed = math.min(targetSpeed, carAspect.CurrentSpeed);
                 }
                 else if (targetSpeed < carAspect.CurrentSpeed)
                 {
