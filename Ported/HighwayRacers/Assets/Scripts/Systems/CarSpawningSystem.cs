@@ -91,6 +91,8 @@ partial struct CarSpawningSystem : ISystem
                     overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness),
                     defaultSpeed = random.NextFloat(config.MinDefaultSpeed, config.MaxDefaultSpeed),
                     leftMergeDistance = random.NextFloat(config.MinLeftMergeDistance, config.MaxLeftMergeDistance),
+                    acceleration = 15,
+                    braking = 20,
                 });
             }
 

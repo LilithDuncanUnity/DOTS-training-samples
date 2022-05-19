@@ -6,7 +6,7 @@ using UnityEngine;
 
 public readonly partial struct CarAspect : IAspect<CarAspect>
 {
-    private readonly RefRO<CarSpeed> m_Speed;
+    private readonly RefRW<CarSpeed> m_Speed;
     private readonly RefRW<CarPosition> m_Position;
     private readonly RefRW<CarAICache> m_Peers;
     private readonly RefRO<CarProperties> m_Properties;
@@ -19,15 +19,17 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
         set => m_Position.ValueRW.currentLane = value;
     }
 
-    public float CurrentSpeed => m_Speed.ValueRO.currentSpeed;
     public float DesiredSpeed => m_Properties.ValueRO.desiredSpeed;
-
-    public float Distance => m_Position.ValueRO.distance;
+    
 
     public bool Preview => m_Preview.ValueRO.Preview;
     public bool SecondaryPreview => m_Preview.ValueRO.SecondaryPreview;
 
     public float MergeSpace => m_Properties.ValueRO.mergeSpace;
+
+    public float Acceleration => m_Properties.ValueRO.acceleration;
+
+    public float Braking => m_Properties.ValueRO.braking;
 
     public Entity CarInFront
     {
@@ -72,6 +74,18 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
         m_ChangingLanes.ValueRW.FromLane = m_ChangingLanes.ValueRO.ToLane;
         m_ChangingLanes.ValueRW.Progress = 0;
     }
+        
+    public float CurrentSpeed
+    {
+        get => m_Speed.ValueRO.currentSpeed;
+        set => m_Speed.ValueRW.currentSpeed = value;
+    }
+
+    public float Distance
+    {
+        get => m_Position.ValueRO.distance;
+        set => m_Position.ValueRW.distance = value;
+    }
 }
 
 public readonly partial struct CarPositionAspect : IAspect<CarPositionAspect>
@@ -103,6 +117,9 @@ public readonly partial struct CarAICacheAspect : IAspect<CarAICacheAspect>
         get => m_Peers.ValueRO.CanMergeRight;
         set => m_Peers.ValueRW.CanMergeRight = value;
     }
+
+    public float DistanceAhead => m_Peers.ValueRO.DistanceAhead;
+    public float DistanceBehind => m_Peers.ValueRO.DistanceBehind;
 
     public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
     public float MergeSpace => m_Properties.ValueRO.mergeSpace;

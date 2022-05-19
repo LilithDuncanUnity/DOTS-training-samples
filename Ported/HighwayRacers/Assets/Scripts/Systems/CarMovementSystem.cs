@@ -1,9 +1,12 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 partial class CarMovementSystem : SystemBase
 {
+    private const float MIN_DIST_BETWEEN_CARS = 2f;
+
     protected override void OnCreate()
     {
         RequireForUpdate<TrackConfig>();
@@ -15,56 +18,49 @@ partial class CarMovementSystem : SystemBase
         var dt = Time.DeltaTime;
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
 
-        Dependency = Entities
-            .ForEach((Entity entity, TransformAspect transform, ref CarPosition carPosition, in CarChangingLanes carCC, in CarSpeed carSpeed) =>
+        Entities
+            .ForEach((Entity entity, TransformAspect transform, CarAspect carAspect, in CarChangingLanes carCC, in CarAICacheAspect car) =>
             {
-                carPosition.distance += dt * carSpeed.currentSpeed;
-
-                TrackUtilities.GetCarPosition(track.highwaySize, carPosition.distance, carPosition.currentLane,
+                TrackUtilities.GetCarPosition(track.highwaySize, carAspect.Distance, carAspect.Lane,
                     carCC.FromLane, carCC.Progress,
                     out float posX, out float posZ, out float outRotation);
                 var pos = transform.Position;
                 transform.Position = new float3(posX, pos.y, posZ);
                 transform.Rotation = quaternion.RotateY(outRotation);
 
-                float targetSpeed = carSpeed.desiredSpeed;
-                //Get the Car in front
-                //Get the distance to the car in front if it's not null
+                float targetSpeed = carAspect.DesiredSpeed;
 
-                //Check if we want to merge left?
-                //Check if we want to change langes?
-                //Check if we are overtaking?
-                //Check if we want to merge right?
+                if (carAspect.CarInFront != null)
+                {
+                    if (car.DistanceAhead <carAspect.LeftMergeDistance)
+                    {
+                        var carSpeed = GetComponent<CarSpeed>(carAspect.CarInFront);
+                        float carInFrontSpeed = carSpeed.currentSpeed;
+                        targetSpeed = Mathf.Min(targetSpeed, carInFrontSpeed);
+                    }
+                }
 
-                //Check if in the process of merging
+                if (targetSpeed > carAspect.CurrentSpeed)
+                {
+                    carAspect.CurrentSpeed = Mathf.Min(targetSpeed, carAspect.CurrentSpeed + carAspect.Acceleration * dt);
+                }
+                else if (targetSpeed < carAspect.CurrentSpeed)
+                {
+                    carAspect.CurrentSpeed = Mathf.Max(targetSpeed, carAspect.CurrentSpeed - carAspect.Braking * dt);
+                }
 
                 //Prevent a crash with car in front
-                //if (carInFront != null && dt > 0)
-                //{
-                //    float maxDistanceDiff = Mathf.Max(0, distToCarInFront - Highway.MIN_DIST_BETWEEN_CARS);
-                //    velocityPosition = Mathf.Min(velocityPosition, maxDistanceDiff / dt);
-                //}
-            }).ScheduleParallel(Dependency);
-    }
-
-    private void UpdateColor()
-    {
-        Entities
-            .WithAll<CarColor>()
-            .ForEach((ref CarColor carColor, in CarSpeed carSpeed) =>
-            {
-                //if (carVelocity > carSpeed.defaultSpeed)
-                //{
-                //  UpdateCar color to maxSpeedColor
-                //}
-                //else if (carSpeed.defaultSpeed < carVelocity)
-                //{
-                //  Update car color to minSpeedColor
-                //}
-                //else
-                {
-                    //Update Car color to carColor.default
+                if (carAspect.CarInFront != null && dt > 0)
+                {                    
+                    if (car.DistanceAhead < 0.1f)
+                    {
+                        Debug.Log("Oh no a crash");
+                    }
+                    float maxDistanceDiff = Mathf.Max(0, car.DistanceAhead - MIN_DIST_BETWEEN_CARS);
+                    carAspect.CurrentSpeed = Mathf.Min(carAspect.CurrentSpeed, maxDistanceDiff / dt);
                 }
-            }).ScheduleParallel();
+
+                carAspect.Distance += dt * carAspect.CurrentSpeed;
+            }).Run();
     }
 }
