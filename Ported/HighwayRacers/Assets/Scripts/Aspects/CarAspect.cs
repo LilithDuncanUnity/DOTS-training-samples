@@ -31,6 +31,7 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     public float DistanceToFront => m_Peers.ValueRO.DistanceToFront;
 
     public float MergeSpace => m_Properties.ValueRO.mergeSpace;
+    public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
 
     public Entity CarInFront
     {
