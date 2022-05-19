@@ -19,7 +19,6 @@ class CarBaker : Baker<CarAuthoring>
 {
     public override void Bake(CarAuthoring authoring)
     {        
-        AddComponent<CarColor>();
         AddComponent<CarDirection>();
         AddComponent(new CarPreview()
         {
@@ -32,22 +31,13 @@ class CarBaker : Baker<CarAuthoring>
             distance = 0
         });
         AddComponent<CarProperties>();
-        AddComponent<CarSpeed>(new CarSpeed
-        {
-            currentSpeed = 10.0f,
-            desiredSpeed = 10.0f
-        });
+        AddComponent<CarSpeed>();
         AddComponent(new CarCameraPoint()
         {
             CameraPoint = GetEntity(authoring.CarCameraPoint),
         });
 
-        AddComponent(new CarPeers()
-        {
-            CarInFront = Entity.Null,
-            DistanceToBack = authoring.DistanceToBack,
-            DistanceToFront = authoring.DistanceToFront
-        });
+        AddComponent<CarAICache>();
 
         var buffer = AddBuffer<ChildrenWithRenderer>().Reinterpret<Entity>();
         foreach (var renderer in GetComponentsInChildren<UnityEngine.MeshRenderer>())

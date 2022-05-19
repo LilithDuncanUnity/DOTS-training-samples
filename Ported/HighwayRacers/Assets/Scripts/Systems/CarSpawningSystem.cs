@@ -82,8 +82,6 @@ partial struct CarSpawningSystem : ISystem
                     mergeSpace = random.NextFloat(config.MinMergeSpace, config.MaxMergeSpace),
                     overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness)
                 });
-
-                ecb.SetComponent(vehicle, new CarColor { defaultColor = UnityEngine.Color.white, fastColor = UnityEngine.Color.green, slowColor = UnityEngine.Color.red });
             }
 
             NeedsRegenerating = false;

@@ -9,9 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 [UpdateAfter(typeof(CarSpawningSystem))]
+[BurstCompile]
 partial struct CarPeerSystem : ISystem
 {
-    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<TrackConfig>();
@@ -21,110 +21,168 @@ partial struct CarPeerSystem : ISystem
     {
     }
 
-    struct CarComparer : IComparer<CarAspect>
+    public struct CarDistanceInfo
     {
-        private float m_HighwaySize;
-        public CarComparer(in TrackConfig track)
+        public Entity Car;
+        public float Distance;
+        public float WrappedDistance;
+    }
+
+    public struct CarDistanceList
+    {
+        public float LaneLength;
+        public int CarCount;
+        public NativeArray<CarDistanceInfo> CarDistances;
+    }
+
+    struct CarDistanceComparer : IComparer<CarDistanceInfo>
+    {
+        public int Compare(CarDistanceInfo a, CarDistanceInfo b)
         {
-            m_HighwaySize = track.highwaySize;
-        }
-        public int Compare(CarAspect a, CarAspect b)
-        {
-            if (a.Lane != b.Lane) return a.Lane.CompareTo(b.Lane);
-            else return TrackUtilities.WrapDistance(m_HighwaySize, a.Distance, a.Lane).CompareTo(TrackUtilities.WrapDistance(m_HighwaySize, b.Distance, b.Lane));
+            if (a.Car == Entity.Null || b.Car == Entity.Null)
+            {
+                if (a.Car != b.Car)
+                {
+                    return a.Car != Entity.Null ? -1 : 1;
+                }
+                return 0;
+            }
+            return a.WrappedDistance.CompareTo(b.WrappedDistance);
         }
     }
 
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
-        NativeArray<CarAspect> cars = CollectionHelper.CreateNativeArray<CarAspect>(track.numberOfCars, Allocator.Temp);
-        int i = 0;
 
-        foreach (var car in SystemAPI.Query<CarAspect>())
+        //NativeArray<CarAspect> cars = CollectionHelper.CreateNativeArray<CarAspect>(track.numberOfCars, Allocator.Temp);
+        NativeArray<CarDistanceList> carLanes = new NativeArray<CarDistanceList>(4, Allocator.Temp);
+        for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
         {
-            car.CarInFront = Entity.Null;
-            cars[i] = car;
-            i++;
+            carLanes[laneIndex] = new CarDistanceList
+            {
+                LaneLength = TrackUtilities.GetLaneLength(track.highwaySize, laneIndex),
+                CarCount = 0,
+                CarDistances = new NativeArray<CarDistanceInfo>(track.numberOfCars, Allocator.Temp)
+            };
         }
 
-        // TODO: figure out how to sort only a subsection of the array
-        if (i < cars.Length) return;
-
-        cars.Sort<CarAspect, CarComparer>(new CarComparer(in track));
-
-        int lastLaneStart = 0;
-        int lastLane = 0;
-        for (int j = 0; j < i; j++)
+        // Build list of car distances
+        foreach (var car in SystemAPI.Query<CarPositionAspect>())
         {
-            var car = cars[j];
-            if (lastLane != car.Lane)
-            {
-                lastLaneStart = j;
-                lastLane = car.Lane;
-            }
+            float distance = car.Distance;
+            CarDistanceList laneInfo = carLanes[car.Lane];
 
-            // if we're at the end of the lane, go back to the start of the lane.
-            if (j == i - 1 || cars[j + 1].Lane != car.Lane)
+            laneInfo.CarDistances[laneInfo.CarCount] = new CarDistanceInfo
             {
-                // only set if there was more than 1 in the lane
-                if (j != lastLaneStart) car.CarInFront = cars[lastLaneStart].Entity;
-                continue;
-            }
-            
-            // otherwise, use the next car.
-            else
+                Car = car.Entity,
+                Distance = distance,
+                WrappedDistance = TrackUtilities.WrapDistance(track.highwaySize, distance, car.Lane)
+            };
+            laneInfo.CarCount++;
+
+            carLanes[car.Lane] = laneInfo;
+        }
+
+        // Sort each lane of car distances and cache the distance from the previous car and the distance to the next car
+        for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
+        {
+            CarDistanceList carLane = carLanes[laneIndex];
+
+            carLane.CarDistances.Sort<CarDistanceInfo, CarDistanceComparer>(new CarDistanceComparer());
+
+            for (int carIndex = 0; carIndex < carLane.CarCount; ++carIndex)
             {
-                car.CarInFront = cars[j + 1].Entity;
+                float distanceAhead = carLane.LaneLength;
+                float distanceBehind = distanceAhead;
+                Entity carAhead = Entity.Null;
+
+                if (carIndex > 0)
+                {
+                    distanceBehind = TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex].Distance - carLane.CarDistances[carIndex - 1].Distance, laneIndex);
+                }
+                else if (carLane.CarCount > 1)
+                {
+                    distanceBehind = carLane.LaneLength - TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carLane.CarCount - 1].Distance - carLane.CarDistances[carIndex].Distance, laneIndex);
+                }
+
+                if (carIndex < carLane.CarCount - 1)
+                {
+                    distanceAhead = TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex + 1].Distance - carLane.CarDistances[carIndex].Distance, laneIndex);
+                    carAhead = carLane.CarDistances[carIndex + 1].Car;
+                }
+                else if (carLanes[laneIndex].CarCount > 1)
+                {
+                    distanceAhead = carLane.LaneLength - TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex].Distance - carLane.CarDistances[0].Distance, laneIndex);
+                    carAhead = carLane.CarDistances[0].Car;
+                }
+
+                // Set the cached AI information to make later systems easier to write
+                state.EntityManager.SetComponentData(carLane.CarDistances[carIndex].Car, new CarAICache
+                {
+                    CarInFront = carAhead,
+                    CanMergeRight = false,
+                    CanMergeLeft = false,
+                    DistanceAhead = distanceAhead,
+                    DistanceBehind = distanceBehind
+                });
             }
         }
 
-
-        // calculate can merge
-        foreach (var car in cars)
+        // Sort each lane of car distances and cache the distance from the previous car and the distance to the next car
+        for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
         {
-            if (car.Lane == 0) 
-                car.CanMergeRight = false;
-            else 
-                car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, in cars, in track);
+            foreach (var car in SystemAPI.Query<CarAICacheAspect>())
+            {
+                if (car.Lane == 0)
+                    car.CanMergeRight = false;
+                else
+                {
+                    CarDistanceList targetLane = carLanes[car.Lane - 1];
+                    car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, ref targetLane, track.highwaySize);
+                }
 
 
-            if (car.Lane == 3) 
-                car.CanMergeLeft = false;
-            else 
-                car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, in cars, in track);
+                if (car.Lane == 3)
+                    car.CanMergeLeft = false;
+                else
+                {
+                    CarDistanceList targetLane = carLanes[car.Lane + 1];
+                    car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, ref targetLane, track.highwaySize);
+                }
+            }
         }
     }
 
-    bool CanMergeToLane(in CarAspect car, int lane, in NativeArray<CarAspect> cars, in TrackConfig track)
+    bool CanMergeToLane(in CarAICacheAspect car, int targetLane, ref CarDistanceList targetLaneInfo, float lane0Length)
     {
-        float distanceBack = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceBack(in car, in track) - car.MergeSpace, car.Lane, lane);
-        float distanceFront = TrackUtilities.GetEquivalentDistance(track.highwaySize, GetDistanceFront(in car, in track) + car.MergeSpace, car.Lane, lane);
+        float distanceBack = TrackUtilities.GetEquivalentDistance(lane0Length, car.Distance - car.MergeSpace, car.Lane, targetLane);
+        float distanceFront = TrackUtilities.GetEquivalentDistance(lane0Length, car.Distance + car.MinDistanceInFront, car.Lane, targetLane);
 
-        // TODO: optimize this from n2
-        foreach (var other in cars)
+        distanceBack = TrackUtilities.WrapDistance(lane0Length, distanceBack, targetLane);
+        distanceFront = TrackUtilities.WrapDistance(lane0Length, distanceFront, targetLane);
+
+        if (distanceBack < distanceFront)
         {
-            if (car.Entity == other.Entity) continue;
-            if (TrackUtilities.AreasOverlap(track.highwaySize, lane, distanceBack, distanceFront, other.Lane, GetDistanceBack(in other, in track),
-                GetDistanceFront(in other, in track)))
+            // This is silly as this list is sorted, so we should be able to leverage that better.
+            foreach (var otherCar in targetLaneInfo.CarDistances)
             {
-                return false;
+                if (otherCar.WrappedDistance > distanceBack && otherCar.WrappedDistance < distanceFront) {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            foreach (var otherCar in targetLaneInfo.CarDistances)
+            {
+                if (otherCar.WrappedDistance < distanceFront || otherCar.WrappedDistance > distanceBack)
+                {
+                    return false;
+                }
             }
         }
         return true;
-    }
-
-    float GetDistanceBack(in CarAspect car, in TrackConfig track)
-    {
-        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
-        return (car.Distance - car.DistanceToBack)
-            + Mathf.Floor((car.Distance - car.DistanceToBack) / laneLen) * laneLen;
-    }
-
-    float GetDistanceFront(in CarAspect car, in TrackConfig track)
-    {
-        var laneLen = TrackUtilities.GetLaneLength(track.highwaySize, car.Lane);
-        return (car.Distance + car.DistanceToFront)
-            + Mathf.Floor((car.Distance + car.DistanceToFront) / laneLen) * laneLen;
     }
 }

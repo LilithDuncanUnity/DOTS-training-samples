@@ -28,5 +28,12 @@ class ConfigBaker : Baker<CarConfigAuthoring>
             MinOvertakeEagerness = authoring.MinOvertakeEagerness, 
             MaxOvertakeEagerness = authoring.MaxOvertakeEagerness
         });
+
+        AddComponent(new CarColor
+        {
+            defaultColor = UnityEngine.Color.gray,
+            fastColor = UnityEngine.Color.green,
+            slowColor = UnityEngine.Color.red
+        });
     }
 }

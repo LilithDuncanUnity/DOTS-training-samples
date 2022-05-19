@@ -11,6 +11,7 @@ public partial struct CarColorSystem : ISystem
     public void OnCreate(ref SystemState state)
     {        
         m_BaseColorQuery = state.GetEntityQuery(typeof(URPMaterialPropertyBaseColor));
+        state.RequireForUpdate<CarColor>();
     }
 
     public void OnDestroy(ref SystemState state)
@@ -47,6 +48,7 @@ public partial struct CarColorSystem : ISystem
             }
         }
 
+        var carColors = SystemAPI.GetSingleton<CarColor>();
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
@@ -66,15 +68,15 @@ public partial struct CarColorSystem : ISystem
                 Color color = Color.white;
                 if (car.CurrentSpeed > car.DesiredSpeed)
                 {
-                    color = car.FastColor;
+                    color = carColors.fastColor;
                 }
                 else if (car.DesiredSpeed > car.CurrentSpeed)
                 {
-                    color = car.SlowColor;
+                    color = carColors.slowColor;
                 }
                 else
                 {
-                    color = car.DefaultColor;
+                    color = carColors.defaultColor;
                 }
                 ecb.SetComponentForLinkedEntityGroup(car.Entity, queryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)(color / (preview ? 4f : 1f))});
             }
