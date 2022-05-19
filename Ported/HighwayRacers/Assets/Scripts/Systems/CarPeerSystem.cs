@@ -21,6 +21,12 @@ partial struct CarPeerSystem : ISystem
     {
     }
 
+    public struct CarGroupingBucket
+    {
+        public int firstIndex;
+        public int carCount;
+    }
+
     public struct CarDistanceInfo
     {
         public Entity Car;
@@ -28,11 +34,12 @@ partial struct CarPeerSystem : ISystem
         public float WrappedDistance;
     }
 
-    public struct CarDistanceList
+    public struct CarLaneInfo
     {
         public float LaneLength;
         public int CarCount;
         public NativeArray<CarDistanceInfo> CarDistances;
+        public NativeArray<CarGroupingBucket> Buckets;
     }
 
     struct CarDistanceComparer : IComparer<CarDistanceInfo>
@@ -57,10 +64,10 @@ partial struct CarPeerSystem : ISystem
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
 
         //NativeArray<CarAspect> cars = CollectionHelper.CreateNativeArray<CarAspect>(track.numberOfCars, Allocator.Temp);
-        NativeArray<CarDistanceList> carLanes = new NativeArray<CarDistanceList>(4, Allocator.Temp);
+        NativeArray<CarLaneInfo> carLanes = new NativeArray<CarLaneInfo>(4, Allocator.Temp);
         for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
         {
-            carLanes[laneIndex] = new CarDistanceList
+            carLanes[laneIndex] = new CarLaneInfo
             {
                 LaneLength = TrackUtilities.GetLaneLength(track.highwaySize, laneIndex),
                 CarCount = 0,
@@ -72,7 +79,7 @@ partial struct CarPeerSystem : ISystem
         foreach (var car in SystemAPI.Query<CarPositionAspect>())
         {
             float distance = car.Distance;
-            CarDistanceList laneInfo = carLanes[car.Lane];
+            CarLaneInfo laneInfo = carLanes[car.Lane];
 
             laneInfo.CarDistances[laneInfo.CarCount] = new CarDistanceInfo
             {
@@ -88,7 +95,7 @@ partial struct CarPeerSystem : ISystem
         // Sort each lane of car distances and cache the distance from the previous car and the distance to the next car
         for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
         {
-            CarDistanceList carLane = carLanes[laneIndex];
+            CarLaneInfo carLane = carLanes[laneIndex];
 
             carLane.CarDistances.Sort<CarDistanceInfo, CarDistanceComparer>(new CarDistanceComparer());
 
@@ -112,7 +119,7 @@ partial struct CarPeerSystem : ISystem
                     distanceAhead = TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex + 1].Distance - carLane.CarDistances[carIndex].Distance, laneIndex);
                     carAhead = carLane.CarDistances[carIndex + 1].Car;
                 }
-                else if (carLanes[laneIndex].CarCount > 1)
+                else if (carLane.CarCount > 1)
                 {
                     distanceAhead = carLane.LaneLength - TrackUtilities.WrapDistance(track.highwaySize, carLane.CarDistances[carIndex].Distance - carLane.CarDistances[0].Distance, laneIndex);
                     carAhead = carLane.CarDistances[0].Car;
@@ -130,6 +137,34 @@ partial struct CarPeerSystem : ISystem
             }
         }
 
+        // Build a spatial partition bucketing the lanes into sections approximately 20 units in length
+        int numBucketsPerLane = (int)math.ceil(track.highwaySize / 20.0f);
+        for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
+        {
+            CarLaneInfo lane = carLanes[laneIndex];
+            lane.Buckets = new NativeArray<CarGroupingBucket>(numBucketsPerLane, Allocator.Temp);
+
+            for (int carIndex = 0; carIndex < lane.CarCount; ++carIndex)
+            {
+                int bucketIndex = CalculateBucket(ref lane, lane.CarDistances[carIndex].WrappedDistance);
+                CarGroupingBucket bucket = lane.Buckets[bucketIndex];
+
+                if (bucket.carCount == 0)
+                {
+                    bucket.firstIndex = carIndex;
+                    bucket.carCount = 1;
+                }
+                else
+                {
+                    ++bucket.carCount;
+                }
+
+                lane.Buckets[bucketIndex] = bucket;
+            }
+
+            carLanes[laneIndex] = lane;
+        }
+
         // Sort each lane of car distances and cache the distance from the previous car and the distance to the next car
         for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
         {
@@ -139,7 +174,7 @@ partial struct CarPeerSystem : ISystem
                     car.CanMergeRight = false;
                 else
                 {
-                    CarDistanceList targetLane = carLanes[car.Lane - 1];
+                    CarLaneInfo targetLane = carLanes[car.Lane - 1];
                     car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, ref targetLane, track.highwaySize);
                 }
 
@@ -148,14 +183,20 @@ partial struct CarPeerSystem : ISystem
                     car.CanMergeLeft = false;
                 else
                 {
-                    CarDistanceList targetLane = carLanes[car.Lane + 1];
+                    CarLaneInfo targetLane = carLanes[car.Lane + 1];
                     car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, ref targetLane, track.highwaySize);
                 }
             }
         }
     }
 
-    bool CanMergeToLane(in CarAICacheAspect car, int targetLane, ref CarDistanceList targetLaneInfo, float lane0Length)
+    int CalculateBucket(ref CarLaneInfo laneInfo, float wrappedDistance)
+    {
+        int bucketIndex = (int)math.floor(laneInfo.Buckets.Length * wrappedDistance / laneInfo.LaneLength);
+        return bucketIndex;
+    }
+
+    bool CanMergeToLane(in CarAICacheAspect car, int targetLane, ref CarLaneInfo targetLaneInfo, float lane0Length)
     {
         float distanceBack = TrackUtilities.GetEquivalentDistance(lane0Length, car.Distance - car.MergeSpace, car.Lane, targetLane);
         float distanceFront = TrackUtilities.GetEquivalentDistance(lane0Length, car.Distance + car.MinDistanceInFront, car.Lane, targetLane);
@@ -163,26 +204,45 @@ partial struct CarPeerSystem : ISystem
         distanceBack = TrackUtilities.WrapDistance(lane0Length, distanceBack, targetLane);
         distanceFront = TrackUtilities.WrapDistance(lane0Length, distanceFront, targetLane);
 
-        if (distanceBack < distanceFront)
+        int backBucket = CalculateBucket(ref targetLaneInfo, distanceBack);
+        int frontBucket = CalculateBucket(ref targetLaneInfo, distanceFront);
+        int firstLoopFrontBucket = frontBucket >= backBucket ? frontBucket : targetLaneInfo.Buckets.Length - 1;
+        float firstLoopDistanceFront = frontBucket >= backBucket ? distanceFront : targetLaneInfo.LaneLength;
+
+        for (int bucketIndex = backBucket; bucketIndex <= firstLoopFrontBucket; ++bucketIndex)
         {
-            // This is silly as this list is sorted, so we should be able to leverage that better.
-            foreach (var otherCar in targetLaneInfo.CarDistances)
+            CarGroupingBucket bucket = targetLaneInfo.Buckets[bucketIndex];
+
+            for (int carIndex = 0; carIndex < bucket.carCount; ++carIndex)
             {
-                if (otherCar.WrappedDistance > distanceBack && otherCar.WrappedDistance < distanceFront) {
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            foreach (var otherCar in targetLaneInfo.CarDistances)
-            {
-                if (otherCar.WrappedDistance < distanceFront || otherCar.WrappedDistance > distanceBack)
+                float distance = targetLaneInfo.CarDistances[bucket.firstIndex + carIndex].WrappedDistance;
+
+                if (distance > distanceBack && distance < firstLoopDistanceFront)
                 {
                     return false;
                 }
             }
         }
+
+        // If the merge range of distances overlaps the wrap point of the track, we need to do a pass for the remaining buckets
+        if (firstLoopFrontBucket != frontBucket)  // Buckets are wrapping around
+        {
+            for (int bucketIndex = 0; bucketIndex <= frontBucket; ++bucketIndex)
+            {
+                CarGroupingBucket bucket = targetLaneInfo.Buckets[bucketIndex];
+
+                for (int carIndex = 0; carIndex < bucket.carCount; ++carIndex)
+                {
+                    float distance = targetLaneInfo.CarDistances[bucket.firstIndex + carIndex].WrappedDistance;
+
+                    if (distance < distanceFront)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 }
