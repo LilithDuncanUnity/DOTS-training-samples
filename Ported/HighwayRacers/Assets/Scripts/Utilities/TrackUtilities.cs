@@ -15,16 +15,16 @@ class TrackUtilities
         return (lane0Length - GetCurveLength(0)*4) / 4;
     }
 
-    public static float GetLaneLength(float lane0Length, int lane)
+    public static float GetLaneLength(float lane0Length, float lane)
     {
         float straightPieceLength = GetStraightawayLength(lane0Length);
         return straightPieceLength * 4 + GetCurveLength(lane) * 4;
     }
-    public static float GetCurveRadius(int lane)
+    public static float GetCurveRadius(float lane)
     {
         return CURVE_LANE0_RADIUS + lane * LANE_SPACING;
     }
-    public static float GetCurveLength(int lane)
+    public static float GetCurveLength(float lane)
     {
         return GetCurveRadius(lane) * math.PI / 2.0f;
     }
@@ -37,10 +37,17 @@ class TrackUtilities
     /// <param name="x"></param>
     /// <param name="z"></param>
     /// <param name="rotation">y rotation of the car, in radians.</param>
-    public static void GetCarPosition(float lane0Length, float distance, int lane, out float x, out float z, out float rotation)
+    public static void GetCarPosition(float lane0Length, float distance, int lane, int fromLane, float laneProgress,
+        out float x, out float z, out float rotation)
     {
+
+        float floatLane;
+
+        if (fromLane < lane) floatLane = fromLane + laneProgress;
+        else floatLane = fromLane - laneProgress;
+
         // keep distance in [0, length)
-        distance = WrapDistance(lane0Length, distance, lane);
+        distance = WrapDistance(lane0Length, distance, floatLane);
 
         float3 pos = float3.zero;
         quaternion rot = quaternion.identity;
@@ -51,7 +58,7 @@ class TrackUtilities
         rotation = 0;
 
         float straightAwayLength = GetStraightawayLength(lane0Length);
-        float curveLength = GetCurveLength(lane);
+        float curveLength = GetCurveLength(floatLane);
 
         for (int i = 0; i < 4; i++)
         {
@@ -60,13 +67,13 @@ class TrackUtilities
                 float localX, localZ;
                 if (distance < straightAwayLength)
                 {
-                    GetStraightPiecePosition(distance, lane, out localX, out localZ, out rotation);
+                    GetStraightPiecePosition(distance, floatLane, out localX, out localZ, out rotation);
                 }
                 else
                 {
                     pos += math.mul(quaternion.RotateY(angle), new float3(0, 0, straightAwayLength));
                     distance -= straightAwayLength;
-                    GetCurvePiecePosition(distance, lane, out localX, out localZ, out rotation);
+                    GetCurvePiecePosition(distance, floatLane, out localX, out localZ, out rotation);
                 }
                 RotateAroundOrigin(localX, localZ, angle, out x, out z);
 
@@ -87,14 +94,14 @@ class TrackUtilities
         }
     }
 
-    private static void GetStraightPiecePosition(float localDistance, int lane, out float x, out float z, out float rotation)
+    private static void GetStraightPiecePosition(float localDistance, float lane, out float x, out float z, out float rotation)
     {
         x = LANE_SPACING * ((NUM_LANES - 1) / 2f - lane);
         z = localDistance;
         rotation = 0;
     }
 
-    private static void GetCurvePiecePosition(float localDistance, int lane, out float x, out float z, out float rotation)
+    private static void GetCurvePiecePosition(float localDistance, float lane, out float x, out float z, out float rotation)
     {
         float radius = GetCurveRadius(lane);
         float length = GetCurveLength(lane);
@@ -116,7 +123,7 @@ class TrackUtilities
     /// <summary>
     /// Wraps distance to be in [0, l), where l is the length of the given lane.
     /// </summary>
-    public static float WrapDistance(float lane0Length, float distance, int lane)
+    public static float WrapDistance(float lane0Length, float distance, float lane)
     {
         float l = GetLaneLength(lane0Length, lane);
         return distance - math.floor(distance / l) * l;

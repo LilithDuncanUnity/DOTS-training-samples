@@ -60,10 +60,18 @@ partial struct CarSpawningSystem : ISystem
 
             foreach (var vehicle in vehicles)
             {
+                int lane = random.NextInt(4);
                 ecb.SetComponent(vehicle, new CarPosition
                 {
                     distance = random.NextFloat(0, trackConfig.highwaySize),
-                    currentLane = random.NextInt(4)
+                    currentLane = lane
+                });
+
+                ecb.SetComponent(vehicle, new CarChangingLanes
+                {
+                    FromLane = lane,
+                    ToLane = lane,
+                    Progress = 0
                 });
 
                 // setting current and desired to be the same on spawn. Current is what is modified from AI and tries to match desired
@@ -80,7 +88,9 @@ partial struct CarSpawningSystem : ISystem
                     overTakePercent = random.NextFloat(config.MinOvertakeSpeedScale, config.MaxOvertakeSpeedScale),
                     minDistanceInFront = random.NextFloat(config.MinDistanceInFront, config.MaxDistanceInFront),
                     mergeSpace = random.NextFloat(config.MinMergeSpace, config.MaxMergeSpace),
-                    overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness)
+                    overTakeEagerness = random.NextFloat(config.MinOvertakeEagerness, config.MaxOvertakeEagerness),
+                    defaultSpeed = random.NextFloat(config.MinDefaultSpeed, config.MaxDefaultSpeed),
+                    leftMergeDistance = random.NextFloat(config.MinLeftMergeDistance, config.MaxLeftMergeDistance),
                 });
             }
 

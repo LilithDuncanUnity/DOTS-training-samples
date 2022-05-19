@@ -11,6 +11,7 @@ public class TrackConfigAuthoring : MonoBehaviour
     public int maxNumberOfCars = 500;
     public int minHighwaySize = 115;
     public int maxHighwaySize = 500;
+    public float switchLanesSpeed = 0.5f;
 }
 
 public class TrackConfigBaker : Baker<TrackConfigAuthoring>
@@ -20,7 +21,8 @@ public class TrackConfigBaker : Baker<TrackConfigAuthoring>
         AddComponent(new TrackConfig
         {
             numberOfCars = authoring.defaultNumberOfCars,
-            highwaySize = authoring.defaultHighwaySize
+            highwaySize = authoring.defaultHighwaySize,
+            switchLanesSpeed = authoring.switchLanesSpeed
         });
 
         AddComponent(new TrackConfigMinMax

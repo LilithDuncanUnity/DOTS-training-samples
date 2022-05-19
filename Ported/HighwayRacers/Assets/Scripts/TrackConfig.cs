@@ -7,6 +7,7 @@ public struct TrackConfig : IComponentData
 {
     public int numberOfCars;
     public int highwaySize;
+    public float switchLanesSpeed;
     public bool dirty;
 }
 

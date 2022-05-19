@@ -8,6 +8,7 @@ class CarConfigAuthoring : UnityEngine.MonoBehaviour
     public float MinDistanceInFront, MaxDistanceInFront;
     public float MinMergeSpace, MaxMergeSpace;
     public float MinOvertakeEagerness, MaxOvertakeEagerness;
+    public float MinLeftMergeDistance = 2, MaxLeftMergeDistance = 15;
 }
 
 class ConfigBaker : Baker<CarConfigAuthoring>
@@ -26,7 +27,9 @@ class ConfigBaker : Baker<CarConfigAuthoring>
             MinMergeSpace = authoring.MinMergeSpace, 
             MaxMergeSpace = authoring.MaxMergeSpace,
             MinOvertakeEagerness = authoring.MinOvertakeEagerness, 
-            MaxOvertakeEagerness = authoring.MaxOvertakeEagerness
+            MaxOvertakeEagerness = authoring.MaxOvertakeEagerness,
+            MaxLeftMergeDistance = authoring.MaxLeftMergeDistance,
+            MinLeftMergeDistance = authoring.MinLeftMergeDistance,
         });
 
         AddComponent(new CarColor

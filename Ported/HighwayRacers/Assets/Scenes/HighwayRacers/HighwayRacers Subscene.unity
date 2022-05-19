@@ -206,6 +206,7 @@ MonoBehaviour:
   maxNumberOfCars: 3000
   minHighwaySize: 170
   maxHighwaySize: 1000
+  switchLanesSpeed: 10
 --- !u!4 &276398158
 Transform:
   m_ObjectHideFlags: 0
@@ -261,6 +262,8 @@ MonoBehaviour:
   MaxMergeSpace: 12
   MinOvertakeEagerness: 0.7
   MaxOvertakeEagerness: 2
+  MinLeftMergeDistance: 2
+  MaxLeftMergeDistance: 15
 --- !u!4 &855152143
 Transform:
   m_ObjectHideFlags: 0

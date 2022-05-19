@@ -2,6 +2,7 @@ using Unity.Entities;
 
 struct CarChangingLanes : IComponentData
 {
-    public int fromLane;
-    public int toLane;    
+    public int FromLane;
+    public int ToLane;
+    public float Progress;
 }

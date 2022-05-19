@@ -16,11 +16,13 @@ partial class CarMovementSystem : SystemBase
         TrackConfig track = SystemAPI.GetSingleton<TrackConfig>();
 
         Dependency = Entities
-            .ForEach((Entity entity, TransformAspect transform, ref CarPosition carPosition, in CarSpeed carSpeed) =>
+            .ForEach((Entity entity, TransformAspect transform, ref CarPosition carPosition, in CarChangingLanes carCC, in CarSpeed carSpeed) =>
             {
                 carPosition.distance += dt * carSpeed.currentSpeed;
 
-                TrackUtilities.GetCarPosition(track.highwaySize, carPosition.distance, carPosition.currentLane, out float posX, out float posZ, out float outRotation);
+                TrackUtilities.GetCarPosition(track.highwaySize, carPosition.distance, carPosition.currentLane,
+                    carCC.FromLane, carCC.Progress,
+                    out float posX, out float posZ, out float outRotation);
                 var pos = transform.Position;
                 transform.Position = new float3(posX, pos.y, posZ);
                 transform.Rotation = quaternion.RotateY(outRotation);

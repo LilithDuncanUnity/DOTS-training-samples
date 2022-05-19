@@ -9,4 +9,5 @@ struct CarConfig : IComponentData
     public float MinDistanceInFront, MaxDistanceInFront;
     public float MinMergeSpace, MaxMergeSpace;
     public float MinOvertakeEagerness, MaxOvertakeEagerness;
+    public float MinLeftMergeDistance, MaxLeftMergeDistance;
 }
