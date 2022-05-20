@@ -48,7 +48,7 @@ namespace HighwayRacers
     //    }
     //}
 
-    [UpdateAfter(typeof(CarBuildAICacheSystem))]
+    [UpdateAfter(typeof(CarPeerSystem))]
     public partial struct CarDecideToMergeSystem : ISystem
     {
         [BurstCompile]
