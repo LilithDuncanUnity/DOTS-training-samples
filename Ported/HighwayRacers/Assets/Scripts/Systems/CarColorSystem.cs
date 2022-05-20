@@ -15,23 +15,24 @@ public partial struct CarColorSystem : ISystem
     partial struct UpdateColorsJob : IJobEntity
     {
         [ReadOnly] public CarGlobalColors CarColors;
-        public EntityCommandBuffer ECB;
+        public EntityCommandBuffer.ParallelWriter ECB;
         public EntityQueryMask QueryMask;
         [ReadOnly] public bool Preview;
 
-        void Execute(ref UpdateColorAspect car)
+        [BurstCompile]
+        void Execute([ChunkIndexInQuery] int chunkIndex, ref UpdateColorAspect car)
         {
+            Color color = Color.white;
             if (car.Preview)
             {
-                ECB.SetComponentForLinkedEntityGroup(car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)Color.magenta });
+				color = (Vector4)Color.magenta;
             }
             else if (car.SecondaryPreview)
             {
-                ECB.SetComponentForLinkedEntityGroup(car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)Color.cyan });
+			    color = (Vector4)Color.cyan;
             }
             else
             {
-                Color color = Color.white;
                 if (car.CurrentSpeed > car.DesiredSpeed || (car.DistanceAhead > car.MinDistanceInFront && car.CurrentSpeed < car.DesiredSpeed))
                 {
                     color = CarColors.fastColor;
@@ -45,11 +46,11 @@ public partial struct CarColorSystem : ISystem
                     color = CarColors.defaultColor;
                 }
 
-                if (color != car.CurrentColor)
-                {
-                    car.CurrentColor = color;
-                    ECB.SetComponentForLinkedEntityGroup(car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)(color / (Preview ? 4f : 1f)) });
-                }
+            }
+            if (color != car.CurrentColor)
+            {
+                car.CurrentColor = color;
+                ECB.SetComponentForLinkedEntityGroup(chunkIndex, car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)(color / (Preview ? 4f : 1f)) });
             }
         }
     }
@@ -104,11 +105,11 @@ public partial struct CarColorSystem : ISystem
         var updateColorsJob = new UpdateColorsJob
         {
             CarColors = carColors,
-            ECB = ecb,
+            ECB = ecb.AsParallelWriter(),
             QueryMask = queryMask,
             Preview = preview
         };
         // Schedule execution in a single thread, and do not block main thread.
-        updateColorsJob.Schedule();
+        updateColorsJob.ScheduleParallel();
     }
 }

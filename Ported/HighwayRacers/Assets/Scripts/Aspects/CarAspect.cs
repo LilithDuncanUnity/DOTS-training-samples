@@ -20,7 +20,6 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
     }
 
     public float DesiredSpeed => m_Properties.ValueRO.desiredSpeed;
-    
 
     public bool Preview => m_Preview.ValueRO.Preview;
     public bool SecondaryPreview => m_Preview.ValueRO.SecondaryPreview;
@@ -41,16 +40,6 @@ public readonly partial struct CarAspect : IAspect<CarAspect>
         get => m_Peers.ValueRO.CarInFrontSpeed;
     }
 
-    public bool CanMergeLeft
-    {
-        get => m_Peers.ValueRO.CanMergeLeft;
-        set => m_Peers.ValueRW.CanMergeLeft = value;
-    }
-    public bool CanMergeRight
-    {
-        get => m_Peers.ValueRO.CanMergeRight;
-        set => m_Peers.ValueRW.CanMergeRight = value;
-    }
     public float LeftMergeDistance => m_Properties.ValueRO.leftMergeDistance;
     public float OvertakeEagerness => m_Properties.ValueRO.overTakeEagerness;
     public float DefaultSpeed => m_Properties.ValueRO.defaultSpeed;
@@ -141,21 +130,22 @@ public readonly partial struct CarAICacheAspect : IAspect<CarAICacheAspect>
 {
     public readonly Entity Entity;
     private readonly RefRO<CarPosition> m_Position;
-    private readonly RefRW<CarAICache> m_Peers;
+    private readonly RefRO<CarAICache> m_Peers;
     private readonly RefRO<CarProperties> m_Properties;
+    private readonly RefRW<CarAIMergeCache> m_MergeInfo;
 
     public int Lane => m_Position.ValueRO.currentLane;
     public float Distance => m_Position.ValueRO.distance;
 
     public bool CanMergeLeft
     {
-        get => m_Peers.ValueRO.CanMergeLeft;
-        set => m_Peers.ValueRW.CanMergeLeft = value;
+        get => m_MergeInfo.ValueRO.CanMergeLeft;
+        set => m_MergeInfo.ValueRW.CanMergeLeft = value;
     }
     public bool CanMergeRight
     {
-        get => m_Peers.ValueRO.CanMergeRight;
-        set => m_Peers.ValueRW.CanMergeRight = value;
+        get => m_MergeInfo.ValueRO.CanMergeRight;
+        set => m_MergeInfo.ValueRW.CanMergeRight = value;
     }
 
     public float DistanceAhead => m_Peers.ValueRO.DistanceAhead;
@@ -170,6 +160,7 @@ public readonly partial struct CarMergingAspect : IAspect<CarMergingAspect>
     public readonly Entity Entity;
     private readonly RefRW<CarPosition> m_Position;
     private readonly RefRO<CarAICache> m_Peers;
+    private readonly RefRO<CarAIMergeCache> m_MergeInfo;
     private readonly RefRO<CarProperties> m_Properties;
     private readonly RefRW<CarChangingLanes> m_ChangingLanes;
 
@@ -193,11 +184,11 @@ public readonly partial struct CarMergingAspect : IAspect<CarMergingAspect>
     }
     public bool CanMergeLeft
     {
-        get => m_Peers.ValueRO.CanMergeLeft;
+        get => m_MergeInfo.ValueRO.CanMergeLeft;
     }
     public bool CanMergeRight
     {
-        get => m_Peers.ValueRO.CanMergeRight;
+        get => m_MergeInfo.ValueRO.CanMergeRight;
     }
 
     public float MinDistanceInFront => m_Properties.ValueRO.minDistanceInFront;
