@@ -32,7 +32,7 @@ class ConfigBaker : Baker<CarConfigAuthoring>
             MinLeftMergeDistance = authoring.MinLeftMergeDistance,
         });
 
-        AddComponent(new CarColor
+        AddComponent(new CarGlobalColors
         {
             defaultColor = UnityEngine.Color.gray,
             fastColor = UnityEngine.Color.green,

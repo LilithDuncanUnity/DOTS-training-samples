@@ -172,26 +172,23 @@ partial struct CarPeerSystem : ISystem
         }
 
         // Sort each lane of car distances and cache the distance from the previous car and the distance to the next car
-        for (int laneIndex = 0; laneIndex < 4; ++laneIndex)
+        foreach (var car in SystemAPI.Query<CarAICacheAspect>())
         {
-            foreach (var car in SystemAPI.Query<CarAICacheAspect>())
+            if (car.Lane == 0)
+                car.CanMergeRight = false;
+            else
             {
-                if (car.Lane == 0)
-                    car.CanMergeRight = false;
-                else
-                {
-                    CarLaneInfo targetLane = carLanes[car.Lane - 1];
-                    car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, ref targetLane, track.highwaySize);
-                }
+                CarLaneInfo targetLane = carLanes[car.Lane - 1];
+                car.CanMergeRight = CanMergeToLane(in car, car.Lane - 1, ref targetLane, track.highwaySize);
+            }
 
 
-                if (car.Lane == 3)
-                    car.CanMergeLeft = false;
-                else
-                {
-                    CarLaneInfo targetLane = carLanes[car.Lane + 1];
-                    car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, ref targetLane, track.highwaySize);
-                }
+            if (car.Lane == 3)
+                car.CanMergeLeft = false;
+            else
+            {
+                CarLaneInfo targetLane = carLanes[car.Lane + 1];
+                car.CanMergeLeft = CanMergeToLane(in car, car.Lane + 1, ref targetLane, track.highwaySize);
             }
         }
     }

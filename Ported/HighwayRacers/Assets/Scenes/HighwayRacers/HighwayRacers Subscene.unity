@@ -203,9 +203,9 @@ MonoBehaviour:
   defaultNumberOfCars: 50
   defaultHighwaySize: 300
   minNumberOfCars: 0
-  maxNumberOfCars: 3000
+  maxNumberOfCars: 24000
   minHighwaySize: 170
-  maxHighwaySize: 5000
+  maxHighwaySize: 40000
   switchLanesSpeed: 10
 --- !u!4 &276398158
 Transform:

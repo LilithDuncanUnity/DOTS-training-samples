@@ -5,11 +5,13 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using UnityEngine;
 
 [BurstCompile]
 partial struct CarSpawningSystem : ISystem
 {
     private EntityQuery m_CarQuery;
+    private EntityQuery m_BaseColorQuery;
 
     public bool NeedsRegenerating
     {
@@ -23,6 +25,7 @@ partial struct CarSpawningSystem : ISystem
         state.RequireForUpdate<CarConfig>();
         state.RequireForUpdate<TrackConfig>();
         m_CarQuery = state.GetEntityQuery(typeof(CarPosition));
+        m_BaseColorQuery = state.GetEntityQuery(typeof(URPMaterialPropertyBaseColor));
 
         NeedsRegenerating = true;
     }
@@ -34,18 +37,8 @@ partial struct CarSpawningSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        SystemAPI.TryGetSingletonEntity<SelectedCar>(out Entity sce);
-        if (sce == Entity.Null)
-        {
-            var e = state.EntityManager.CreateEntity();
-            state.EntityManager.AddComponent<SelectedCar>(e);
-            state.EntityManager.SetComponentData<SelectedCar>(e, new()
-            {
-                Selected = Entity.Null
-            });
-        }
-
         if (NeedsRegenerating) {
+            CarGlobalColors globalColors = SystemAPI.GetSingleton<CarGlobalColors>();
             var config = SystemAPI.GetSingleton<CarConfig>();
             var trackConfig = SystemAPI.GetSingleton<TrackConfig>();
 
@@ -56,7 +49,9 @@ partial struct CarSpawningSystem : ISystem
             var vehicles = CollectionHelper.CreateNativeArray<Entity>(trackConfig.numberOfCars, allocator);
             ecb.Instantiate(config.CarPrefab, vehicles);
 
-            var random = Random.CreateFromIndex(501);
+            var queryMask = m_BaseColorQuery.GetEntityQueryMask();
+
+            var random = Unity.Mathematics.Random.CreateFromIndex(501);
 
             foreach (var vehicle in vehicles)
             {
@@ -94,6 +89,13 @@ partial struct CarSpawningSystem : ISystem
                     acceleration = 15,
                     braking = 20,
                 });
+
+                ecb.SetComponent(vehicle, new CarColor
+                {
+                    currentColor = globalColors.defaultColor
+                });
+
+                ecb.SetComponentForLinkedEntityGroup(vehicle, queryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)globalColors.defaultColor });
             }
 
             NeedsRegenerating = false;

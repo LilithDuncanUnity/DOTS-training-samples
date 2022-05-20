@@ -40,6 +40,7 @@ class CarBaker : Baker<CarAuthoring>
         AddComponent<CarAICache>();
 
         AddComponent<CarChangingLanes>();
+        AddComponent<CarColor>();
 
         var buffer = AddBuffer<ChildrenWithRenderer>().Reinterpret<Entity>();
         foreach (var renderer in GetComponentsInChildren<UnityEngine.MeshRenderer>())

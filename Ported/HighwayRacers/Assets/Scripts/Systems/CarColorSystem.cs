@@ -14,12 +14,12 @@ public partial struct CarColorSystem : ISystem
     [BurstCompile]
     partial struct UpdateColorsJob : IJobEntity
     {
-        [ReadOnly] public CarColor CarColors;
+        [ReadOnly] public CarGlobalColors CarColors;
         public EntityCommandBuffer ECB;
         public EntityQueryMask QueryMask;
         [ReadOnly] public bool Preview;
 
-        void Execute(in UpdateColorAspect car)
+        void Execute(ref UpdateColorAspect car)
         {
             if (car.Preview)
             {
@@ -44,7 +44,12 @@ public partial struct CarColorSystem : ISystem
                 {
                     color = CarColors.defaultColor;
                 }
-                ECB.SetComponentForLinkedEntityGroup(car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)(color / (Preview ? 4f : 1f)) });
+
+                if (color != car.CurrentColor)
+                {
+                    car.CurrentColor = color;
+                    ECB.SetComponentForLinkedEntityGroup(car.Entity, QueryMask, new URPMaterialPropertyBaseColor { Value = (Vector4)(color / (Preview ? 4f : 1f)) });
+                }
             }
         }
     }
@@ -53,7 +58,7 @@ public partial struct CarColorSystem : ISystem
     public void OnCreate(ref SystemState state)
     {        
         m_BaseColorQuery = state.GetEntityQuery(typeof(URPMaterialPropertyBaseColor));
-        state.RequireForUpdate<CarColor>();
+        state.RequireForUpdate<CarGlobalColors>();
     }
 
     public void OnDestroy(ref SystemState state)
@@ -91,7 +96,7 @@ public partial struct CarColorSystem : ISystem
             }
         }
 
-        var carColors = SystemAPI.GetSingleton<CarColor>();
+        var carColors = SystemAPI.GetSingleton<CarGlobalColors>();
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         var queryMask = m_BaseColorQuery.GetEntityQueryMask();

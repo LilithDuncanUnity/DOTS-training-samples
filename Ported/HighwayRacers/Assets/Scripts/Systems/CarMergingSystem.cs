@@ -51,6 +51,28 @@ namespace HighwayRacers
     [UpdateAfter(typeof(CarPeerSystem))]
     public partial struct CarDecideToMergeSystem : ISystem
     {
+        [BurstCompile]
+        partial struct DecideToMergeJob : IJobEntity
+        {
+            public float HighwaySize;
+
+            [BurstCompile]
+            void Execute([ChunkIndexInQuery] int chunkIndex, ref CarMergingAspect car)
+            {
+                if (!car.IsMerging && car.MinDistanceInFront >= car.DistanceInFront)
+                {
+                    if (car.CanMergeLeft)
+                    {
+                        car.MergeLeft(HighwaySize);
+                    }
+                    else if (car.CanMergeRight)
+                    {
+                        car.MergeRight(HighwaySize);
+                    }
+                }
+            }
+        }
+
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<TrackConfig>();
@@ -65,26 +87,37 @@ namespace HighwayRacers
         {
             var track = SystemAPI.GetSingleton<TrackConfig>();
 
-            foreach (var car in SystemAPI.Query<CarMergingAspect>())
+            var mergeJob = new DecideToMergeJob
             {
-                if (!car.IsMerging && car.MinDistanceInFront >= car.DistanceInFront)
-                {
-                    if (car.CanMergeLeft)
-                    {
-                        car.MergeLeft(track.highwaySize);
-                    }
-                    else if (car.CanMergeRight)
-                    {
-                        car.MergeRight(track.highwaySize);
-                    }
-                }
-            }
+                HighwaySize = track.highwaySize
+            };
+            mergeJob.ScheduleParallel();
         }
     }
 
     [UpdateAfter(typeof(CarDecideToMergeSystem))]
+    [BurstCompile]
     public partial struct CarUpdateMergeSystem : ISystem
     {
+        [BurstCompile]
+        partial struct PerformMergeJob : IJobEntity
+        {
+            public float DeltaTime;
+
+            [BurstCompile]
+            void Execute(ref CarMergingAspect car)
+            {
+                if (car.IsMerging)
+                {
+                    car.MergeProgress += DeltaTime;
+                    if (car.MergeProgress >= 1.0f)
+                    {
+                        car.ConcludeMerge();
+                    }
+                }
+            }
+        }
+
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<TrackConfig>();
@@ -99,19 +132,11 @@ namespace HighwayRacers
         {
             float dt = Time.deltaTime;
 
-            foreach (var car in SystemAPI.Query<CarMergingAspect>())
+            var performMergeJob = new PerformMergeJob
             {
-                if (car.IsMerging)
-                {
-                    car.MergeProgress += dt;
-                    if (car.MergeProgress >= 1.0f)
-                    {
-                        car.ConcludeMerge();
-                    }
-                }
-            }
+                DeltaTime = Time.deltaTime
+            };
+            performMergeJob.ScheduleParallel();
         }
     }
-
-
 }

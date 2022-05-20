@@ -98,6 +98,8 @@ public readonly partial struct UpdateColorAspect : IAspect<UpdateColorAspect>
     private readonly RefRO<CarAICache> m_Peers;
     private readonly RefRO<CarProperties> m_Properties;
     private readonly RefRO<CarPreview> m_Preview;
+    private readonly RefRW<CarColor> m_Color;
+
     public readonly Entity Entity;
 
     public float CurrentSpeed => m_Speed.ValueRO.currentSpeed;
@@ -109,6 +111,12 @@ public readonly partial struct UpdateColorAspect : IAspect<UpdateColorAspect>
 
     public bool Preview => m_Preview.ValueRO.Preview;
     public bool SecondaryPreview => m_Preview.ValueRO.SecondaryPreview;
+
+    public Color CurrentColor
+    {
+        get => m_Color.ValueRO.currentColor;
+        set => m_Color.ValueRW.currentColor = value;
+    }
 }
 
 public readonly partial struct CarPositionAspect : IAspect<CarPositionAspect>
